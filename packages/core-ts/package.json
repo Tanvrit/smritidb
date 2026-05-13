@@ -1,5 +1,5 @@
 {
-  "name": "smritidb",
+  "name": "@tanvrit/smritidb",
   "version": "0.1.0",
   "description": "An open biology-inspired associative memory layer. Storage that remembers by partial cue, degrades like a hologram, and consolidates with use. TypeScript reference implementation.",
   "author": {

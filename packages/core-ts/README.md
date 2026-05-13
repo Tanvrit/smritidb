@@ -7,13 +7,13 @@ TypeScript reference implementation of [Smritidb](https://github.com/Tanvrit/smr
 ## Install (when published)
 
 ```bash
-npm install smritidb
+npm install @tanvrit/smritidb
 ```
 
 ## Quick example (target API)
 
 ```ts
-import { Smritidb } from "smritidb";
+import { Smritidb } from "@tanvrit/smritidb";
 
 const store = new Smritidb({ dimension: 10000, backend: "memory" });
 

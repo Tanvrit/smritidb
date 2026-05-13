@@ -65,7 +65,7 @@ function Hero() {
             github ↗
           </a>
           <span className="font-mono text-[0.74rem] faint">
-            npm install smritidb &nbsp;·&nbsp; coming with phase 1
+            npm install @tanvrit/smritidb &nbsp;·&nbsp; coming with phase 1
           </span>
         </div>
       </div>

@@ -8,7 +8,7 @@ import {
   similarity,
   unbind,
   type Hypervector,
-} from "smritidb";
+} from "@tanvrit/smritidb";
 
 const D = 4096;
 

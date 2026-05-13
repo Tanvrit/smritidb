@@ -15,7 +15,7 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "marked": "^14.1.4",
-    "smritidb": "workspace:*"
+    "@tanvrit/smritidb": "workspace:*"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.0.0",

@@ -39,7 +39,7 @@ The math substrate is **Hyperdimensional Computing** / **Sparse Distributed Memo
 ## Sketch of the API (subject to Phase 0 lock)
 
 ```ts
-import { Smritidb } from "smritidb";
+import { Smritidb } from "@tanvrit/smritidb";
 
 const store = new Smritidb({ dimension: 10000, backend: "memory" });
 
@@ -54,7 +54,7 @@ await store.consolidate();
 
 Same API surface across:
 
-- `npm i smritidb` — Node + browser (Wasm)
+- `npm i @tanvrit/smritidb` — Node + browser (Wasm)
 - `cargo add smritidb` — Rust
 - `pip install smritidb` — Python
 - Maven Central — Kotlin Multiplatform (JVM/Android/iOS/JS/Native)

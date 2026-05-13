@@ -2,7 +2,7 @@
 const nextConfig = {
   reactStrictMode: true,
   output: "export",
-  transpilePackages: ["smritidb"],
+  transpilePackages: ["@tanvrit/smritidb"],
   images: {
     unoptimized: true,
   },
