@@ -1,0 +1,40 @@
+[package]
+name = "smritidb-core"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+description = "Smritidb core — binary hyperdimensional computing primitives. Native + WebAssembly."
+authors = ["Tanvrit Private Limited <opensource@tanvrit.com>"]
+homepage = "https://smritidb.com"
+repository = "https://github.com/Tanvrit/smritidb"
+readme = "README.md"
+keywords = ["associative-memory", "hyperdimensional-computing", "sparse-distributed-memory", "vsa", "storage"]
+categories = ["data-structures", "memory-management", "wasm"]
+rust-version = "1.75"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+blake3 = { version = "1.5", default-features = false, features = ["pure"] }
+
+# WebAssembly bindings — gated behind the `wasm` feature so native Rust users
+# don't pay the wasm-bindgen cost.
+wasm-bindgen = { version = "0.2", optional = true }
+
+[features]
+default = []
+wasm = ["dep:wasm-bindgen"]
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[[bench]]
+name = "primitives"
+harness = false
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+strip = "symbols"
