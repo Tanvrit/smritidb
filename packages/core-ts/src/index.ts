@@ -37,3 +37,13 @@ export { DEFAULT_CONSOLIDATION } from "./consolidate.js";
 export { snapshot, restore } from "./snapshot.js";
 export { KMF_SPEC_VERSION, readKmf, writeKmf } from "./kmf.js";
 export type { KmfSnapshot, KmfItem, KmfHeader, KmfBlockRef, KmfBlockKind } from "./kmf.js";
+
+export {
+  openPersistentStore,
+  persistStore,
+  withPersistence,
+  MemoryAdapter,
+  fsAdapter,
+  indexedDbAdapter,
+} from "./adapters/index.js";
+export type { StorageAdapter, PersistentStoreConfig } from "./adapters/index.js";
