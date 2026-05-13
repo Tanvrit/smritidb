@@ -20,6 +20,7 @@
 
 pub mod encode;
 pub mod hypervector;
+pub mod text;
 
 #[cfg(feature = "wasm")]
 pub mod wasm;
@@ -28,6 +29,7 @@ pub const SPEC_VERSION: &str = "0.1.0-draft";
 
 pub use encode::{encode_embedding, encode_string};
 pub use hypervector::{bind, bundle, permute, random_hv, similarity, Hypervector};
+pub use text::{encode_bag_of_words, encode_char_ngrams, encode_word_ngrams, TextEncodingOptions};
 
 #[cfg(test)]
 mod tests {

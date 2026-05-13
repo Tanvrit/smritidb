@@ -1,0 +1,126 @@
+{
+  "spec_version": "0.1.0-draft",
+  "generated_by": "@tanvrit/smritidb (TS reference)",
+  "notes": "Locks the bit-exact contract for SPEC.md §1.4 randomHv and the SPEC §3 primitives. Every conformant Smritidb implementation must produce identical bytes for the inputs below.",
+  "random_hv": [
+    {
+      "seed_utf8": "hello",
+      "dim": 64,
+      "sha256": "0cc31b49fb65d2cb4a251b4e9f23ea82dc433db258081634b1d6a2375e8053fc"
+    },
+    {
+      "seed_utf8": "hello",
+      "dim": 256,
+      "sha256": "6a1e0999170b469e7bd4d7a86d4b438a4bc235ac205c0679447d59efdc55cb2f"
+    },
+    {
+      "seed_utf8": "hello",
+      "dim": 1024,
+      "sha256": "debc098fcb2315102c8eccba2120dd02d85ea495f2b482ebb582e6fd63e4fdc3"
+    },
+    {
+      "seed_utf8": "world",
+      "dim": 1024,
+      "sha256": "7b6846c4c0cd369d94b13a94168ae93f49f2e175eeacf160c0c1df04e9ca590d"
+    },
+    {
+      "seed_utf8": "é unicode 你好",
+      "dim": 1024,
+      "sha256": "eff0dacec0030af3d2195352ae5e02db3846ca7bcb5be9db4adef60a5ae0989a"
+    }
+  ],
+  "encode_string": [
+    {
+      "input": "subject",
+      "dim": 1024,
+      "sha256": "0b7aea7b316be0c14326d5f303ca2dbe7158dda48aa16045143f17cc5105d461"
+    },
+    {
+      "input": "predicate",
+      "dim": 1024,
+      "sha256": "c5a04d2ad6dd3d7def88f7669d838ae533d11f95c34d4aaed9277608ae653e20"
+    },
+    {
+      "input": "object",
+      "dim": 1024,
+      "sha256": "3f4a3ef1dd2dcf24f4ec7f5f4377c890ce05a04d7d8d3b21bf1c2461b49eb9e8"
+    }
+  ],
+  "similarity_pairs": [
+    {
+      "a_seed": "a",
+      "b_seed": "a",
+      "dim": 1024,
+      "expected": 1
+    },
+    {
+      "a_seed": "a",
+      "b_seed": "b",
+      "dim": 1024,
+      "expected": 0.5185546875
+    },
+    {
+      "a_seed": "role:name",
+      "b_seed": "role:name",
+      "dim": 1024,
+      "expected": 1
+    }
+  ],
+  "bind_round_trip": [
+    {
+      "a_seed": "role:name",
+      "b_seed": "filler:alice",
+      "dim": 1024,
+      "expected_similarity_to_a": 1
+    }
+  ],
+  "bundle": [
+    {
+      "seeds": [
+        "x0",
+        "x1",
+        "x2"
+      ],
+      "dim": 1024,
+      "sha256": "9720b13f8c6da366cedc524cc8105bfc19a4fa6dd86353cb1ab2fd14ccad05fd"
+    },
+    {
+      "seeds": [
+        "name",
+        "alice",
+        "age",
+        "thirty",
+        "city",
+        "boston"
+      ],
+      "dim": 1024,
+      "sha256": "237062134b527eaf780e0c1a1a883ac95e039ec0edbf34dece934f37f21bf35c"
+    }
+  ],
+  "text_bag_of_words": [
+    {
+      "text": "the cat sat on the mat",
+      "dim": 1024,
+      "sha256": "6a4408963fa846431ac464cceaed5c6a445dc71ec0a9e3249445aa2d5a7553eb"
+    },
+    {
+      "text": "rolling stone gathers no moss",
+      "dim": 1024,
+      "sha256": "2e1c087d2f9dc824057f73461c3b2e42460d521aeb94519573c5ed1ac0683e73"
+    }
+  ],
+  "text_char_ngrams": [
+    {
+      "text": "photograph",
+      "dim": 1024,
+      "n": 3,
+      "sha256": "37c9ca9bcf33b9c4bc0b2ae8e169f57cac6e8474980ec868e366b6b1eb773ae1"
+    },
+    {
+      "text": "hyperdimensional",
+      "dim": 1024,
+      "n": 3,
+      "sha256": "3995603359e179134b6228c32d15c30a0f0daf925c09aaa2d12d528dcd883a99"
+    }
+  ]
+}

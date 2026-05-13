@@ -18,6 +18,7 @@ import {
   Smritidb,
   bind,
   bundle,
+  encodeBagOfWords,
   encodeString,
   similarity,
   unbind,
@@ -25,23 +26,6 @@ import {
 } from "@tanvrit/smritidb";
 
 const D = 10_000;
-
-/**
- * A simple bag-of-words encoder: bundle a hypervector per word. This is what
- * makes partial cues ("cat on mat") match longer stored sentences ("the cat
- * sat on the mat"). The encoder lives in the demo on purpose — Smritidb
- * itself ships the math primitives; how text becomes a key is a *modelling*
- * choice your app makes.
- */
-function encodeBagOfWords(text: string, dim: number): Hypervector {
-  const words = text
-    .toLowerCase()
-    .replace(/[^a-z0-9 ]+/g, " ")
-    .split(/\s+/)
-    .filter((w) => w.length > 2);
-  if (words.length === 0) return encodeString(text, dim);
-  return bundle(words.map((w) => encodeString(`word:${w}`, dim)));
-}
 
 function header(s: string) {
   console.log(`\n[1m${s}[0m`);

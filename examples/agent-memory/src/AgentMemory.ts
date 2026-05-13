@@ -14,31 +14,12 @@
 
 import {
   Smritidb,
-  bundle,
-  encodeString,
+  encodeBagOfWords,
   fsAdapter,
   openPersistentStore,
   persistStore,
-  type Hypervector,
   type StorageAdapter,
 } from "@tanvrit/smritidb";
-
-/**
- * Bag-of-words encoder. Text is normalised, split on whitespace, each word
- * mapped to its own hypervector and bundled. This is the simplest encoder
- * that yields genuine partial-cue retrieval (substrings of the same content
- * recover the original). For higher fidelity, plug in a real embedding model
- * and use `encodeEmbedding` instead.
- */
-function bagOfWords(text: string, dim: number): Hypervector {
-  const words = text
-    .toLowerCase()
-    .replace(/[^a-z0-9 ]+/g, " ")
-    .split(/\s+/)
-    .filter((w) => w.length > 2);
-  if (words.length === 0) return encodeString(text, dim);
-  return bundle(words.map((w) => encodeString(`word:${w}`, dim)));
-}
 
 export interface MemoryEntry {
   readonly id: string;
@@ -97,7 +78,7 @@ export class AgentMemory {
 
   /** Add a fact / message / observation to long-term memory. */
   async remember(text: string, tags: readonly string[] = []): Promise<string> {
-    const key = bagOfWords(text, this.#store.dimension);
+    const key = encodeBagOfWords(text, this.#store.dimension);
     const item = this.#store.put(key, text, { tags: [...tags] });
     if (this.#autoPersist && this.#adapter) {
       await persistStore(this.#store, this.#adapter);
@@ -107,7 +88,7 @@ export class AgentMemory {
 
   /** Recall memories relevant to a query. Returns text + similarity score. */
   recall(query: string, opts: { topK?: number; minSimilarity?: number } = {}): MemoryEntry[] {
-    const cue = bagOfWords(query, this.#store.dimension);
+    const cue = encodeBagOfWords(query, this.#store.dimension);
     const hits = this.#store.recall(cue, {
       topK: opts.topK ?? this.#topK,
       minSimilarity: opts.minSimilarity ?? this.#minSim,

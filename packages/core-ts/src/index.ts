@@ -26,6 +26,9 @@ export {
 
 export { encodeString, encodeEmbedding, isHypervector } from "./encode.js";
 
+export { encodeBagOfWords, encodeWordNgrams, encodeCharNgrams } from "./text.js";
+export type { TextEncodingOptions } from "./text.js";
+
 export { SmritidbError, type SmritidbErrorKind } from "./errors.js";
 
 export type {
@@ -45,5 +48,11 @@ export {
   MemoryAdapter,
   fsAdapter,
   indexedDbAdapter,
+  sqliteAdapter,
 } from "./adapters/index.js";
-export type { StorageAdapter, PersistentStoreConfig } from "./adapters/index.js";
+export type {
+  StorageAdapter,
+  PersistentStoreConfig,
+  SqliteAdapterOptions,
+  SqliteDatabase,
+} from "./adapters/index.js";
