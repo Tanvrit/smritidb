@@ -1,0 +1,41 @@
+{
+  "name": "kanerva",
+  "version": "0.0.0",
+  "description": "Biology-inspired associative memory layer — TypeScript reference implementation.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "../../LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "node --test --experimental-strip-types src/*.test.ts",
+    "lint": "eslint src",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "associative-memory",
+    "hyperdimensional-computing",
+    "sparse-distributed-memory",
+    "vector-symbolic-architectures",
+    "kanerva",
+    "storage"
+  ],
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

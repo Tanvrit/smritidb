@@ -1,0 +1,25 @@
+{
+  "name": "kanerva-monorepo",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Biology-inspired storage layer — root workspace.",
+  "license": "MIT",
+  "packageManager": "pnpm@9.12.0",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "build": "pnpm -r run build",
+    "test": "pnpm -r run test",
+    "lint": "pnpm -r run lint",
+    "typecheck": "pnpm -r run typecheck",
+    "dev": "pnpm --filter web dev"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/REPLACE_WITH_OWNER/kanerva"
+  }
+}

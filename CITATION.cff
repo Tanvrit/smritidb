@@ -1,0 +1,60 @@
+cff-version: 1.2.0
+title: "Kanerva: a biology-inspired associative memory layer"
+message: "If you use this software, please cite it as below, alongside the underlying Sparse Distributed Memory paper."
+type: software
+authors:
+  - family-names: Singh
+    given-names: Vivek
+    email: ervivek40@gmail.com
+repository-code: "https://github.com/REPLACE_WITH_OWNER/kanerva"
+abstract: >
+  Kanerva is an open, cross-platform associative memory layer that brings
+  hyperdimensional computing and sparse distributed memory out of the lab
+  and into application development. It treats meaning as a first-class
+  addressing primitive: write data, recall it by partial cue, degrade
+  gracefully under substrate loss, and let access patterns reshape the
+  index over time.
+keywords:
+  - associative-memory
+  - hyperdimensional-computing
+  - sparse-distributed-memory
+  - vector-symbolic-architectures
+  - storage
+  - content-addressable-memory
+license: MIT
+version: 0.0.0
+date-released: 2026-05-13
+references:
+  - type: article
+    authors:
+      - family-names: Kanerva
+        given-names: Pentti
+    title: "Sparse Distributed Memory"
+    publisher:
+      name: MIT Press
+    year: 1988
+    isbn: "9780262111324"
+  - type: article
+    authors:
+      - family-names: Kanerva
+        given-names: Pentti
+    title: "Hyperdimensional Computing: An Introduction to Computing in Distributed Representation with High-Dimensional Random Vectors"
+    journal: "Cognitive Computation"
+    volume: 1
+    issue: 2
+    start: 139
+    end: 159
+    year: 2009
+    doi: "10.1007/s12559-009-9009-8"
+  - type: article
+    authors:
+      - family-names: Plate
+        given-names: Tony A.
+    title: "Holographic Reduced Representations"
+    journal: "IEEE Transactions on Neural Networks"
+    volume: 6
+    issue: 3
+    start: 623
+    end: 641
+    year: 1995
+    doi: "10.1109/72.377968"
