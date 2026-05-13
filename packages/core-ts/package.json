@@ -20,7 +20,7 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "test": "node --test --experimental-strip-types src/*.test.ts",
+    "test": "tsx --test src/*.test.ts",
     "lint": "eslint src",
     "typecheck": "tsc --noEmit"
   },
@@ -37,5 +37,11 @@
   },
   "publishConfig": {
     "access": "public"
+  },
+  "dependencies": {
+    "@noble/hashes": "^1.5.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0"
   }
 }

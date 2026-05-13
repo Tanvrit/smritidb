@@ -1,22 +1,29 @@
-// Kanerva — TypeScript reference implementation.
-// Phase 1 is not yet started. This file is a placeholder so the workspace
-// resolves; the real implementation will land against SPEC.md once Phase 0
-// (the validation notebook) is signed off.
-//
-// See ../../SPEC.md and ../../docs/MANIFESTO.md.
+// Kanerva — TypeScript reference implementation against SPEC.md v0.1.0-draft.
 
 export const SPEC_VERSION = "0.1.0-draft" as const;
 
-export interface KanervaConfig {
-  dimension: number;
-  backend: "memory";
-}
+export { Kanerva } from "./store.js";
+export type {
+  KanervaConfig,
+  Item,
+  Match,
+  CueLike,
+  PutOptions,
+  RecallOptions,
+  Metadata,
+  Scalar,
+} from "./store.js";
 
-export class Kanerva {
-  readonly spec = SPEC_VERSION;
-  constructor(public readonly config: KanervaConfig) {
-    if (config.dimension < 1024) {
-      throw new Error(`dimension < 1024 is rejected by the spec (got ${config.dimension})`);
-    }
-  }
-}
+export {
+  randomHv,
+  bind,
+  unbind,
+  bundle,
+  permute,
+  similarity,
+  type Hypervector,
+} from "./hypervector.js";
+
+export { encodeString, encodeEmbedding, isHypervector } from "./encode.js";
+
+export { KanervaError, type KanervaErrorKind } from "./errors.js";
