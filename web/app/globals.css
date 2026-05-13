@@ -1,16 +1,29 @@
 @import "tailwindcss";
 
 @theme {
-  --color-ink: #0f0e0c;
-  --color-ink-soft: #1a1916;
-  --color-paper: #ebe7df;
-  --color-paper-bright: #f7f5ef;
-  --color-paper-muted: #8e8b84;
-  --color-paper-faint: #4a4842;
-  --color-rule: #2a2722;
-  --color-rule-strong: #3d3933;
-  --color-accent: #e8533b;
-  --color-highlight: #d4b85c;
+  /* Light-first, ink-on-paper palette. The variable NAMES preserve the
+     print metaphor: `ink` is the dark foreground, `paper` is the light
+     background. They were dark-mode-first in the v0; flipped here for
+     genuine print feel. */
+
+  /* Backgrounds (the "paper") */
+  --color-ink: #f7f4ee;            /* page bg — warm cream */
+  --color-ink-soft: #eeeae0;       /* surface / card / pre-block bg */
+
+  /* Foregrounds (the "ink") */
+  --color-paper: #1a1815;          /* body text — deep warm black */
+  --color-paper-bright: #0a0907;   /* headlines, hover, emphasis */
+  --color-paper-muted: #6b6660;    /* secondary text — warm grey */
+  --color-paper-faint: #a39d94;    /* tertiary text — captions, footnotes */
+
+  /* Rules / hairlines */
+  --color-rule: #dcd6cc;           /* subtle dividers */
+  --color-rule-strong: #c4bdb1;    /* table header borders, emphasised dividers */
+
+  /* Accents — coral red kept, slightly cooled for ink-on-paper contrast.
+     Highlight kept (vintage proofreader's yellow works on both palettes). */
+  --color-accent: #c84b32;
+  --color-highlight: #b89a3e;
 
   --font-display: "Spectral", "Iowan Old Style", "Palatino", "ui-serif", serif;
   --font-body: "Spectral", "Iowan Old Style", "Palatino", "ui-serif", serif;
@@ -22,7 +35,7 @@
 
 @layer base {
   html {
-    color-scheme: dark;
+    color-scheme: light;
     background-color: var(--color-ink);
     color: var(--color-paper);
     font-family: var(--font-body);
@@ -229,9 +242,9 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  opacity: 0.05;
-  mix-blend-mode: overlay;
+  opacity: 0.04;
+  mix-blend-mode: multiply;
   background-image:
-    radial-gradient(circle at 1px 1px, rgba(255,255,255,0.6) 1px, transparent 0);
+    radial-gradient(circle at 1px 1px, rgba(0,0,0,0.55) 1px, transparent 0);
   background-size: 3px 3px;
 }
