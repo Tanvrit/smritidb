@@ -1,9 +1,17 @@
-// Kanerva store — public API per SPEC.md §3.
+// Smritidb store — public API per SPEC.md §3.
 //
 // Phase 1: in-memory only. Persistence adapters land in Phase 4.
 
 import { encodeEmbedding, encodeString, isHypervector } from "./encode.js";
 import { cleanupSearch, type CleanupEntry } from "./cleanup.js";
+import {
+  CoactivationTracker,
+  DEFAULT_CONSOLIDATION,
+  flagColdItems,
+  pullCloser,
+  type ConsolidationConfig,
+  type ConsolidationReport,
+} from "./consolidate.js";
 import { invalidConfig, notFound, valueTooLarge } from "./errors.js";
 import type { Hypervector } from "./hypervector.js";
 import { uuidv7 } from "./uuid.js";
@@ -11,7 +19,7 @@ import { uuidv7 } from "./uuid.js";
 export type Scalar = string | number | boolean | null;
 export type Metadata = Record<string, Scalar>;
 
-export interface KanervaConfig {
+export interface SmritidbConfig {
   dimension?: number;
   valueCapBytes?: number;
   backend?: "memory";
@@ -19,17 +27,19 @@ export interface KanervaConfig {
     defaultTopK?: number;
     defaultMinSimilarity?: number;
   };
+  consolidation?: Partial<ConsolidationConfig>;
 }
 
 export interface Item {
   readonly id: string;
-  readonly key: Hypervector;
+  key: Hypervector;
   readonly value: Uint8Array;
   readonly tags: readonly string[];
   readonly metadata: Readonly<Metadata>;
   readonly createdAt: number;
   accessCount: number;
   lastAccessedAt: number;
+  cold: boolean;
 }
 
 export interface Match {
@@ -56,7 +66,7 @@ const DEFAULT_VALUE_CAP = 16 * 1024 * 1024;
 const DEFAULT_TOP_K = 10;
 const DEFAULT_MIN_SIM = 0.5;
 
-export class Kanerva {
+export class Smritidb {
   readonly dimension: number;
   readonly valueCapBytes: number;
   readonly backend: "memory";
@@ -65,13 +75,21 @@ export class Kanerva {
   readonly #defaultTopK: number;
   readonly #defaultMinSim: number;
   readonly #valueEncoder = new TextEncoder();
+  readonly #consolidation: ConsolidationConfig;
+  readonly #tracker: CoactivationTracker;
+  #consolidationGeneration = 0;
 
-  constructor(config: KanervaConfig = {}) {
+  constructor(config: SmritidbConfig = {}) {
     this.dimension = config.dimension ?? DEFAULT_DIMENSION;
     this.valueCapBytes = config.valueCapBytes ?? DEFAULT_VALUE_CAP;
     this.backend = config.backend ?? "memory";
     this.#defaultTopK = config.recall?.defaultTopK ?? DEFAULT_TOP_K;
     this.#defaultMinSim = config.recall?.defaultMinSimilarity ?? DEFAULT_MIN_SIM;
+    this.#consolidation = {
+      ...DEFAULT_CONSOLIDATION,
+      ...(config.consolidation ?? {}),
+    };
+    this.#tracker = new CoactivationTracker(this.#consolidation.windowSize);
 
     if (this.dimension < 1024) {
       throw invalidConfig(`dimension must be >= 1024 (got ${this.dimension})`);
@@ -98,6 +116,7 @@ export class Kanerva {
       createdAt: existing?.createdAt ?? now,
       accessCount: existing?.accessCount ?? 0,
       lastAccessedAt: now,
+      cold: false,
     };
     this.#items.set(item.id, item);
     return item;
@@ -119,9 +138,52 @@ export class Kanerva {
       const item = this.#items.get(hit.id)!;
       item.accessCount += 1;
       item.lastAccessedAt = now;
+      item.cold = false;
       out.push({ item, similarity: hit.similarity });
     }
+    if (out.length > 1) {
+      this.#tracker.record(out.map((m) => m.item.id));
+    }
     return out;
+  }
+
+  consolidate(opts: { now?: number } = {}): ConsolidationReport {
+    const now = opts.now ?? Date.now();
+    const pairs = this.#tracker.pairsAtOrAbove(this.#consolidation.pullThreshold);
+
+    let bitsFlipped = 0;
+    let pairsPulled = 0;
+    for (const { a, b } of pairs) {
+      const aItem = this.#items.get(a);
+      const bItem = this.#items.get(b);
+      if (!aItem || !bItem) continue;
+      const result = pullCloser(
+        aItem.key,
+        bItem.key,
+        this.#consolidation.maxSimDelta,
+        ++this.#consolidationGeneration,
+      );
+      aItem.key = result.a;
+      bItem.key = result.b;
+      bitsFlipped += result.bitsFlipped;
+      pairsPulled += 1;
+    }
+
+    const coldIds = flagColdItems(
+      [...this.#items.values()].map((it) => ({
+        id: it.id,
+        accessCount: it.accessCount,
+        lastAccessedAt: it.lastAccessedAt,
+      })),
+      this.#consolidation,
+      now,
+    );
+    for (const id of coldIds) {
+      const item = this.#items.get(id);
+      if (item) item.cold = true;
+    }
+
+    return { pairsPulled, bitsFlipped, coldItemsFlagged: coldIds.length };
   }
 
   delete(id: string): boolean {
@@ -136,6 +198,18 @@ export class Kanerva {
 
   size(): number {
     return this.#items.size;
+  }
+
+  itemsSnapshot(): readonly Item[] {
+    return [...this.#items.values()];
+  }
+
+  static fromItems(config: SmritidbConfig, items: readonly Item[]): Smritidb {
+    const store = new Smritidb(config);
+    for (const it of items) {
+      store.#items.set(it.id, { ...it });
+    }
+    return store;
   }
 
   #toHypervector(input: CueLike): Hypervector {

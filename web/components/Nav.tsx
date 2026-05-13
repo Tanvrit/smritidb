@@ -9,7 +9,7 @@ export function Nav() {
             className="font-mono text-[0.78rem]"
             style={{ letterSpacing: "var(--tracking-hairline)", textTransform: "uppercase" }}
           >
-            <span className="text-[color:var(--color-paper-bright)]">Kanerva</span>
+            <span className="text-[color:var(--color-paper-bright)]">Smritidb</span>
             <span className="text-[color:var(--color-paper-muted)]"> ⁄ </span>
             <span className="text-[color:var(--color-paper-muted)]">v0.1.0-draft</span>
           </span>
@@ -17,7 +17,7 @@ export function Nav() {
         <nav className="flex items-baseline gap-7">
           <NavLink href="/manifesto">Manifesto</NavLink>
           <NavLink href="/docs">Spec</NavLink>
-          <NavLink href="https://github.com/Tanvrit/kanerva" external>
+          <NavLink href="https://github.com/Tanvrit/smritidb" external>
             Repository
           </NavLink>
         </nav>

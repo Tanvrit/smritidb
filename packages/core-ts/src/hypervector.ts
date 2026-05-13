@@ -10,7 +10,7 @@ import { dimensionMismatch } from "./errors.js";
 
 export type Hypervector = Uint8Array;
 
-const TIEBREAKER_DOMAIN = "kanerva/tiebreak";
+const TIEBREAKER_DOMAIN = "smritidb/tiebreak";
 
 export function randomHv(seed: Uint8Array, dimension: number): Hypervector {
   const bits = blake3

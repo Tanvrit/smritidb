@@ -38,7 +38,7 @@ function Hero() {
           style={{ animationDelay: "0.55s" }}
         >
           <p className="text-[1.08rem] leading-[1.65] text-[color:var(--color-paper)]">
-            Kanerva is a biology-inspired associative-memory layer for every platform.
+            Smritidb is a biology-inspired associative-memory layer for every platform.
             It treats <em>meaning</em> as a first-class addressing primitive — recall by partial
             cue, degrade like a hologram, consolidate the way the cortex consolidates while
             you sleep. An open standard for the missing layer in the storage stack.
@@ -57,7 +57,7 @@ function Hero() {
             <span>specification</span>
           </Link>
           <a
-            href="https://github.com/Tanvrit/kanerva"
+            href="https://github.com/Tanvrit/smritidb"
             target="_blank"
             rel="noreferrer"
             className="no-underline muted"
@@ -65,7 +65,7 @@ function Hero() {
             github ↗
           </a>
           <span className="font-mono text-[0.74rem] faint">
-            npm install kanerva &nbsp;·&nbsp; coming with phase 1
+            npm install smritidb &nbsp;·&nbsp; coming with phase 1
           </span>
         </div>
       </div>

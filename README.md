@@ -1,8 +1,8 @@
-# Kanerva
+# Smritidb
 
 > Storage that remembers like you do.
 
-**Kanerva** is a biology-inspired storage layer for every platform. It treats *meaning* as a first-class addressing primitive — write data, recall it by partial cue, watch it degrade gracefully when the substrate shrinks, and let frequently-co-accessed items consolidate into closer associations on their own.
+**Smritidb** is a biology-inspired storage layer for every platform. It treats *meaning* as a first-class addressing primitive — write data, recall it by partial cue, watch it degrade gracefully when the substrate shrinks, and let frequently-co-accessed items consolidate into closer associations on their own.
 
 Named after [Pentti Kanerva](https://en.wikipedia.org/wiki/Pentti_Kanerva), who introduced *Sparse Distributed Memory* in 1988. The math is his; the cross-platform productization is ours.
 
@@ -28,7 +28,7 @@ The math substrate is **Hyperdimensional Computing** / **Sparse Distributed Memo
 
 ---
 
-## What Kanerva is, and isn't
+## What Smritidb is, and isn't
 
 ✅ **Is**: a semantic memory layer for apps — LLM long-term memory, fuzzy caches, "find similar" search, agent state.
 
@@ -39,9 +39,9 @@ The math substrate is **Hyperdimensional Computing** / **Sparse Distributed Memo
 ## Sketch of the API (subject to Phase 0 lock)
 
 ```ts
-import { Kanerva } from "kanerva";
+import { Smritidb } from "smritidb";
 
-const store = new Kanerva({ dimension: 10000, backend: "memory" });
+const store = new Smritidb({ dimension: 10000, backend: "memory" });
 
 await store.put("the cat sat on the mat", { tags: ["sentence"] });
 
@@ -54,9 +54,9 @@ await store.consolidate();
 
 Same API surface across:
 
-- `npm i kanerva` — Node + browser (Wasm)
-- `cargo add kanerva` — Rust
-- `pip install kanerva` — Python
+- `npm i smritidb` — Node + browser (Wasm)
+- `cargo add smritidb` — Rust
+- `pip install smritidb` — Python
 - Maven Central — Kotlin Multiplatform (JVM/Android/iOS/JS/Native)
 - SwiftPM — Swift
 
@@ -65,15 +65,15 @@ Same API surface across:
 ## Repo layout
 
 ```
-kanerva/
+smritidb/
 ├── SPEC.md                The contract every binding implements
 ├── notebooks/             Phase 0 math validation (Python + numpy)
 ├── packages/
 │   ├── core-ts/           TypeScript reference implementation
 │   ├── core-rs/           Rust core + Wasm + native bindings (Phase 2)
-│   ├── kanerva-py/        Python bindings (Phase 3)
-│   ├── kanerva-kmp/       Kotlin Multiplatform bindings (Phase 3)
-│   └── kanerva-swift/     Swift bindings (Phase 3)
+│   ├── smritidb-py/        Python bindings (Phase 3)
+│   ├── smritidb-kmp/       Kotlin Multiplatform bindings (Phase 3)
+│   └── smritidb-swift/     Swift bindings (Phase 3)
 ├── web/                   Next.js site — manifesto, docs, playground
 ├── examples/              Sample apps
 ├── benchmarks/            Reproducible benchmarks vs. vector DBs
@@ -98,7 +98,7 @@ Apache-2.0 — see [`LICENSE`](LICENSE) and [`NOTICE`](NOTICE). The Apache-2.0 p
 
 ## Citation
 
-If Kanerva ends up in your research, please cite both the underlying SDM paper and this library. See [`CITATION.cff`](CITATION.cff).
+If Smritidb ends up in your research, please cite both the underlying SDM paper and this library. See [`CITATION.cff`](CITATION.cff).
 
 ---
 

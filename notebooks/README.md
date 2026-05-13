@@ -1,6 +1,6 @@
 # Phase 0 notebooks
 
-Math validation for the Kanerva substrate. These notebooks empirically verify the three load-bearing properties of HDC/SDM before any production code is written.
+Math validation for the Smritidb substrate. These notebooks empirically verify the three load-bearing properties of HDC/SDM before any production code is written.
 
 ## Setup
 

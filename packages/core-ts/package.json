@@ -1,5 +1,5 @@
 {
-  "name": "kanerva",
+  "name": "smritidb",
   "version": "0.0.0",
   "description": "Biology-inspired associative memory layer — TypeScript reference implementation.",
   "license": "Apache-2.0",
@@ -29,7 +29,7 @@
     "hyperdimensional-computing",
     "sparse-distributed-memory",
     "vector-symbolic-architectures",
-    "kanerva",
+    "smritidb",
     "storage"
   ],
   "engines": {

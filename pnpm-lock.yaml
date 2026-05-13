@@ -24,7 +24,7 @@ importers:
 
   web:
     dependencies:
-      kanerva:
+      smritidb:
         specifier: workspace:*
         version: link:../packages/core-ts
       marked:

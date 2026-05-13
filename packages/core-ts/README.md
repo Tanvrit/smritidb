@@ -1,21 +1,21 @@
-# kanerva (core-ts)
+# smritidb (core-ts)
 
-TypeScript reference implementation of [Kanerva](https://github.com/Tanvrit/kanerva) — the open biology-inspired associative memory layer.
+TypeScript reference implementation of [Smritidb](https://github.com/Tanvrit/smritidb) — the open biology-inspired associative memory layer.
 
 **Status:** Phase 0 — spec only. The real code lands in Phase 1, against [`SPEC.md`](../../SPEC.md).
 
 ## Install (when published)
 
 ```bash
-npm install kanerva
+npm install smritidb
 ```
 
 ## Quick example (target API)
 
 ```ts
-import { Kanerva } from "kanerva";
+import { Smritidb } from "smritidb";
 
-const store = new Kanerva({ dimension: 10000, backend: "memory" });
+const store = new Smritidb({ dimension: 10000, backend: "memory" });
 
 await store.put("the cat sat on the mat", { tags: ["sentence"] });
 

@@ -1,23 +1,23 @@
-# Kanerva Specification v0.1.0-draft
+# Smritidb Specification v0.1.0-draft
 
 **Status:** DRAFT — Phase 0. Subject to change until the v0.1.0 tag. After v1.0.0, breaking changes require a major version bump.
 
-**Purpose:** This document is the *contract* every Kanerva implementation must satisfy. The reference TypeScript implementation (Phase 1) and every downstream binding (Phase 2+) are downstream of this file. Behavior disagreements between an implementation and this document are bugs in the implementation, not the spec.
+**Purpose:** This document is the *contract* every Smritidb implementation must satisfy. The reference TypeScript implementation (Phase 1) and every downstream binding (Phase 2+) are downstream of this file. Behavior disagreements between an implementation and this document are bugs in the implementation, not the spec.
 
 ---
 
 ## 0. Document conventions
 
 - "MUST", "SHOULD", "MAY" follow [RFC 2119](https://www.rfc-editor.org/rfc/rfc2119) semantics.
-- "The substrate" refers to the in-memory representation of a Kanerva store.
-- "An implementation" refers to any conformant runtime (core-ts, core-rs, kanerva-py, etc.).
-- "KMF" (Kanerva Memory Format) refers to the persistent wire format defined in §8.
+- "The substrate" refers to the in-memory representation of a Smritidb store.
+- "An implementation" refers to any conformant runtime (core-ts, core-rs, smritidb-py, etc.).
+- "KMF" (Smritidb Memory Format) refers to the persistent wire format defined in §8.
 
 ---
 
 ## 1. Mathematical substrate
 
-Kanerva is built on **binary hyperdimensional computing (HDC)** with a sparse-distributed-memory backing store. The choice of binary (rather than bipolar or real-valued) optimizes for cross-platform reproducibility, cheap operations, and direct mapping to bitwise SIMD.
+Smritidb is built on **binary hyperdimensional computing (HDC)** with a sparse-distributed-memory backing store. The choice of binary (rather than bipolar or real-valued) optimizes for cross-platform reproducibility, cheap operations, and direct mapping to bitwise SIMD.
 
 ### 1.1 Hypervectors
 
@@ -77,7 +77,7 @@ Item := {
 
 - `key` is derived from the user-provided semantic key (see §3).
 - `value` is treated as opaque bytes by the substrate. Encoding is the caller's responsibility.
-- Implementations MUST enforce the value cap; the default is 16 MiB, configurable to 256 MiB. Larger values belong in a blob store; pair the blob's CAS hash with Kanerva.
+- Implementations MUST enforce the value cap; the default is 16 MiB, configurable to 256 MiB. Larger values belong in a blob store; pair the blob's CAS hash with Smritidb.
 
 ### 2.2 Store
 
@@ -219,7 +219,7 @@ When `c(a, b) > threshold_pull` (default: 32), modify `a.key` and `b.key` to be 
 
 ### 5.3 Cold summarization
 
-Items with `lastAccessedAt` older than `T_cold` (default: 30 days) AND `accessCount < N_cold` (default: 3) are eligible for **bundling**: the substrate may replace `n` cold items with a single bundled hypervector that retains approximate similarity to each. The original `value` payloads are moved to a `kanerva://attic/<bundle-id>` sub-store from which they can be cheaply re-instantiated on a near-hit.
+Items with `lastAccessedAt` older than `T_cold` (default: 30 days) AND `accessCount < N_cold` (default: 3) are eligible for **bundling**: the substrate may replace `n` cold items with a single bundled hypervector that retains approximate similarity to each. The original `value` payloads are moved to a `smritidb://attic/<bundle-id>` sub-store from which they can be cheaply re-instantiated on a near-hit.
 
 ### 5.4 Determinism
 
@@ -278,9 +278,9 @@ StoreConfig := {
 
 ---
 
-## 8. KMF — Kanerva Memory Format (open wire format)
+## 8. KMF — Smritidb Memory Format (open wire format)
 
-KMF is the **persistent, implementation-independent** wire format for Kanerva substrates. It is positioned for the same standards path as Apache Parquet and Apache Iceberg: a canonical layout that any conformant implementation can read and write.
+KMF is the **persistent, implementation-independent** wire format for Smritidb substrates. It is positioned for the same standards path as Apache Parquet and Apache Iceberg: a canonical layout that any conformant implementation can read and write.
 
 ### 8.1 Goals
 
@@ -348,7 +348,7 @@ The single source of truth for "did I implement the spec correctly?" is the **co
 - A set of operations (puts, recalls, consolidations) and their expected outcomes.
 - A set of KMF golden files that round-trip.
 
-Every binding MUST run the corpus in CI. A binding that does not pass is not Kanerva.
+Every binding MUST run the corpus in CI. A binding that does not pass is not Smritidb.
 
 ---
 

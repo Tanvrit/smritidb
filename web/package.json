@@ -1,8 +1,8 @@
 {
-  "name": "kanerva-web",
+  "name": "smritidb-web",
   "version": "0.0.0",
   "private": true,
-  "description": "Kanerva — public site, manifesto, and interactive demos.",
+  "description": "Smritidb — public site, manifesto, and interactive demos.",
   "scripts": {
     "dev": "next dev -p 4123",
     "build": "next build",
@@ -15,7 +15,7 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "marked": "^14.1.4",
-    "kanerva": "workspace:*"
+    "smritidb": "workspace:*"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.0.0",

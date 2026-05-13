@@ -14,7 +14,7 @@ labels: enhancement
 // Sketch — implementation details welcome but not required.
 ```
 
-## Why Kanerva (not Postgres / a vector DB / Redis)
+## Why Smritidb (not Postgres / a vector DB / Redis)
 
 <!-- Help us understand why the three load-bearing properties
 (fuzzy content-addressing, holographic distribution, Hebbian consolidation)

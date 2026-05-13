@@ -1,15 +1,15 @@
 import { strict as assert } from "node:assert";
 import { describe, it } from "node:test";
 
-import { Kanerva } from "./store.js";
+import { Smritidb } from "./store.js";
 
-describe("Kanerva store", () => {
+describe("Smritidb store", () => {
   it("rejects dimension < 1024", () => {
-    assert.throws(() => new Kanerva({ dimension: 512 }), /dimension must be >= 1024/);
+    assert.throws(() => new Smritidb({ dimension: 512 }), /dimension must be >= 1024/);
   });
 
   it("put + recall round-trips a string", () => {
-    const store = new Kanerva({ dimension: 8192 });
+    const store = new Smritidb({ dimension: 8192 });
     store.put("the cat sat on the mat", "the cat sat on the mat");
     const hits = store.recall("the cat sat on the mat", { topK: 1, minSimilarity: 0.9 });
     assert.equal(hits.length, 1);
@@ -18,7 +18,7 @@ describe("Kanerva store", () => {
   });
 
   it("recalls multiple items ranked by similarity", () => {
-    const store = new Kanerva({ dimension: 8192 });
+    const store = new Smritidb({ dimension: 8192 });
     store.put("alpha", "alpha");
     store.put("beta", "beta");
     store.put("gamma", "gamma");
@@ -29,14 +29,14 @@ describe("Kanerva store", () => {
   });
 
   it("respects topK", () => {
-    const store = new Kanerva({ dimension: 8192 });
+    const store = new Smritidb({ dimension: 8192 });
     for (let i = 0; i < 25; i++) store.put(`item-${i}`, `value-${i}`);
     const hits = store.recall("item-7", { topK: 3, minSimilarity: 0 });
     assert.equal(hits.length, 3);
   });
 
   it("filter is applied before ranking", () => {
-    const store = new Kanerva({ dimension: 8192 });
+    const store = new Smritidb({ dimension: 8192 });
     store.put("alpha", "alpha", { tags: ["greek"] });
     store.put("beta", "beta", { tags: ["greek"] });
     store.put("one", "one", { tags: ["english"] });
@@ -50,7 +50,7 @@ describe("Kanerva store", () => {
   });
 
   it("accessCount increments on recall hit", () => {
-    const store = new Kanerva({ dimension: 8192 });
+    const store = new Smritidb({ dimension: 8192 });
     const item = store.put("alpha", "alpha");
     assert.equal(item.accessCount, 0);
     store.recall("alpha", { topK: 1, minSimilarity: 0.9 });
@@ -59,7 +59,7 @@ describe("Kanerva store", () => {
   });
 
   it("delete removes the item", () => {
-    const store = new Kanerva({ dimension: 8192 });
+    const store = new Smritidb({ dimension: 8192 });
     const item = store.put("alpha", "alpha");
     assert.equal(store.delete(item.id), true);
     assert.equal(store.size(), 0);
@@ -67,7 +67,7 @@ describe("Kanerva store", () => {
   });
 
   it("upsert by id preserves createdAt", async () => {
-    const store = new Kanerva({ dimension: 8192 });
+    const store = new Smritidb({ dimension: 8192 });
     const first = store.put("alpha", "alpha", { id: "fixed-id-1" });
     await new Promise((r) => setTimeout(r, 5));
     const second = store.put("alpha-prime", "alpha-prime", { id: "fixed-id-1" });
@@ -77,7 +77,7 @@ describe("Kanerva store", () => {
   });
 
   it("rejects values larger than the cap", () => {
-    const store = new Kanerva({ dimension: 8192, valueCapBytes: 16 });
+    const store = new Smritidb({ dimension: 8192, valueCapBytes: 16 });
     assert.throws(
       () => store.put("alpha", "x".repeat(64)),
       /ValueTooLarge/,

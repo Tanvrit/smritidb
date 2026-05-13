@@ -4,9 +4,9 @@ import path from "node:path";
 import { marked } from "marked";
 
 export const metadata = {
-  title: "Specification · Kanerva",
+  title: "Specification · Smritidb",
   description:
-    "The Kanerva specification — the cross-binding contract every implementation follows.",
+    "The Smritidb specification — the cross-binding contract every implementation follows.",
 };
 
 export default async function DocsPage() {
@@ -23,12 +23,12 @@ export default async function DocsPage() {
             The Specification
           </h1>
           <p className="muted mt-7 max-w-[60ch] leading-relaxed">
-            The contract every Kanerva implementation must satisfy. Behavior disagreements between
+            The contract every Smritidb implementation must satisfy. Behavior disagreements between
             an implementation and this document are bugs in the implementation, not the spec. After
             v1.0.0, breaking changes require a major version bump.
           </p>
           <p className="font-mono text-[0.78rem] muted mt-6">
-            <Link href="https://github.com/Tanvrit/kanerva/blob/main/SPEC.md" className="accent no-underline">
+            <Link href="https://github.com/Tanvrit/smritidb/blob/main/SPEC.md" className="accent no-underline">
               source on github ↗
             </Link>
             <span className="mx-3 faint">|</span>

@@ -24,9 +24,9 @@ Closes #
 
 - [ ] core-ts
 - [ ] core-rs
-- [ ] kanerva-py
-- [ ] kanerva-kmp
-- [ ] kanerva-swift
+- [ ] smritidb-py
+- [ ] smritidb-kmp
+- [ ] smritidb-swift
 - [ ] web (docs site)
 
 ## Checklist

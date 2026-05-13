@@ -1,6 +1,6 @@
-# Contributing to Kanerva
+# Contributing to Smritidb
 
-Thanks for being here. Kanerva is in **Phase 0** (spec & math validation), so the most useful contributions right now are conceptual rather than code-level. Once Phase 1 (TS reference implementation) starts, the contribution surface broadens.
+Thanks for being here. Smritidb is in **Phase 0** (spec & math validation), so the most useful contributions right now are conceptual rather than code-level. Once Phase 1 (TS reference implementation) starts, the contribution surface broadens.
 
 ## How to help, by phase
 

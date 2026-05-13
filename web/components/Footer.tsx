@@ -13,7 +13,7 @@ export function Footer() {
           <p className="spec-tag mb-3">substrate</p>
           <p className="muted leading-relaxed">
             Binary HDC with sparse-distributed-memory backing. Bit-exact across bindings via the
-            Kanerva Memory Format (KMF).
+            Smritidb Memory Format (KMF).
           </p>
         </div>
         <div>

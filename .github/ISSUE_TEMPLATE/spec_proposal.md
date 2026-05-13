@@ -16,9 +16,9 @@ labels: spec
 
 - core-ts:
 - core-rs:
-- kanerva-py:
-- kanerva-kmp:
-- kanerva-swift:
+- smritidb-py:
+- smritidb-kmp:
+- smritidb-swift:
 
 ## Impact on wire format
 

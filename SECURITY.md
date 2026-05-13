@@ -2,7 +2,7 @@
 
 ## Supported Versions
 
-Kanerva is pre-release (Phase 0). No version has reached general availability. Security fixes will land on `main` and be tagged once the 0.1.0 release ships.
+Smritidb is pre-release (Phase 0). No version has reached general availability. Security fixes will land on `main` and be tagged once the 0.1.0 release ships.
 
 | Version | Supported |
 |---------|-----------|
@@ -13,7 +13,7 @@ Kanerva is pre-release (Phase 0). No version has reached general availability. S
 
 **Do not open public issues for security vulnerabilities.**
 
-Please email **security@kanervalabs.com** (or, until that mailbox exists, the maintainer listed in `MAINTAINERS.md`) with:
+Please email **security@tanvrit.com** (or, until that mailbox exists, the maintainer listed in `MAINTAINERS.md`) with:
 
 - Affected component(s) and version(s)
 - A description of the vulnerability and its impact
@@ -26,7 +26,7 @@ We do not currently offer a bug bounty. We do credit reporters in release notes 
 
 ## Threat model (early sketch)
 
-Because Kanerva stores data, the relevant threats are:
+Because Smritidb stores data, the relevant threats are:
 
 - **Recall poisoning** — an attacker with write access introduces vectors that pull legitimate recalls toward malicious values. Mitigated by capability-scoped writes and audit logs.
 - **Cleanup memory inversion** — an attacker with read access uses repeated probes to reconstruct stored items. Mitigated by query rate limits and differential-privacy-aware recall (research).

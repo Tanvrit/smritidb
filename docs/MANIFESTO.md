@@ -1,4 +1,4 @@
-# The Kanerva Manifesto
+# The Smritidb Manifesto
 
 *Associative memory is the missing layer of the modern computing stack. This is the open standard that fills it.*
 
@@ -57,7 +57,7 @@ Look at the layers of a modern stack:
 
 The last row is empty. It has been empty for fifty years. Every team that wants it builds a half-hearted version on top of a vector DB, a Redis cache, and a pile of hand-rolled glue code. The result is fragile, expensive, and locked into a specific vendor's pipeline.
 
-Kanerva fills the row.
+Smritidb fills the row.
 
 ## 4. Three properties, all required
 
@@ -87,14 +87,14 @@ Three things are true at once for the first time:
 
 3. **The applications begged for it.** Every LLM agent on earth needs long-term memory. Every "find similar" feature needs sub-second fuzzy retrieval. Every cache wants to summarize cold entries. Every personalization system wants soft, time-decaying state. All of these are working around the absence of the layer this manifesto describes.
 
-The fifty-year gap between Kanerva's paper and an open, productized implementation is not because the idea was wrong. It is because the idea was early.
+The fifty-year gap between Smritidb's paper and an open, productized implementation is not because the idea was wrong. It is because the idea was early.
 
 ## 6. What we are building
 
-**Kanerva** is:
+**Smritidb** is:
 
 - An **open specification** of an associative memory substrate, written so multiple implementations can interoperate.
-- An **open wire format** (the *Kanerva Memory Format*, KMF) for persisted substrates, on the same standards path as Parquet, Iceberg, and Arrow.
+- An **open wire format** (the *Smritidb Memory Format*, KMF) for persisted substrates, on the same standards path as Parquet, Iceberg, and Arrow.
 - A **reference implementation** in TypeScript (Phase 1), Rust + Wasm (Phase 2), and native bindings for Python, Kotlin Multiplatform, and Swift (Phase 3) — one core, every platform an app developer might target.
 - A **public benchmark suite** with honest numbers against vector databases, embedded caches, and existing SDM implementations.
 - A **hardware-agnostic** runtime: CPU is the floor; GPU is the optimization; neuromorphic is the long horizon.
@@ -110,7 +110,7 @@ It is not:
 
 Revolutions in infrastructure are usually quiet. Nobody noticed when the relational model replaced hierarchical databases until they had been using SQL for ten years. Nobody noticed when columnar storage replaced row-oriented warehouses until Snowflake was a hundred-billion-dollar company.
 
-The Kanerva bet is small, sharp, and load-bearing:
+The Smritidb bet is small, sharp, and load-bearing:
 
 > *In five years, every nontrivial application will have an associative memory layer. The standard will be open or it will be closed. We are building it open.*
 
@@ -132,6 +132,6 @@ The reference implementations are Apache-2.0 licensed (with the explicit patent 
 
 ---
 
-*Kanerva is for anyone who has ever written `embedding = model.embed(x); index.upsert(id, embedding); db.set(id, x)` and thought: this can't be the final form.*
+*Smritidb is for anyone who has ever written `embedding = model.embed(x); index.upsert(id, embedding); db.set(id, x)` and thought: this can't be the final form.*
 
 *It isn't.*

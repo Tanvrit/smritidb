@@ -8,7 +8,7 @@ import {
   similarity,
   unbind,
   type Hypervector,
-} from "kanerva";
+} from "smritidb";
 
 const D = 4096;
 
@@ -164,7 +164,7 @@ export function HypervectorDemo() {
       </div>
 
       <div className="border-t border-[color:var(--color-rule)] px-6 py-3 flex items-baseline justify-between font-mono text-[0.72rem] muted">
-        <span>running the <span className="text-[color:var(--color-paper-bright)]">kanerva</span> package, in your browser, in real time.</span>
+        <span>running the <span className="text-[color:var(--color-paper-bright)]">smritidb</span> package, in your browser, in real time.</span>
         <span>↳ SPEC.md §3.3</span>
       </div>
     </div>

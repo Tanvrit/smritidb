@@ -10,7 +10,7 @@ labels: bug
 
 ## Environment
 
-- Kanerva version:
+- Smritidb version:
 - Language binding (js / rust / py / kmp / swift):
 - Platform / OS:
 - Backend (memory / indexeddb / sqlite / fs / s3):

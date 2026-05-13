@@ -4,10 +4,10 @@ import { Nav } from "../components/Nav";
 import { Footer } from "../components/Footer";
 
 export const metadata: Metadata = {
-  title: "Kanerva — an open associative memory standard",
+  title: "Smritidb — an open associative memory standard",
   description:
-    "Kanerva is a biology-inspired associative memory layer for every platform. Storage that remembers by partial cue, degrades like a hologram, and consolidates the way you do.",
-  metadataBase: new URL("https://kanervalabs.com"),
+    "Smritidb is a biology-inspired associative memory layer for every platform. Storage that remembers by partial cue, degrades like a hologram, and consolidates the way you do.",
+  metadataBase: new URL("https://smritidb.tanvrit.com"),
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
