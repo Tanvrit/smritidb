@@ -1,0 +1,27 @@
+[package]
+name = "smritidb-ffi"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+description = "Smritidb FFI bindings via UniFFI — generates Kotlin and Swift surfaces over the Rust core."
+authors = ["Tanvrit Private Limited <opensource@tanvrit.com>"]
+homepage = "https://smritidb.com"
+repository = "https://github.com/Tanvrit/smritidb"
+publish = false
+
+[lib]
+name = "smritidb_ffi"
+crate-type = ["cdylib", "staticlib", "rlib"]
+
+[[bin]]
+name = "uniffi-bindgen"
+path = "src/bin/uniffi-bindgen.rs"
+
+[dependencies]
+uniffi = { version = "0.28", features = ["cli"] }
+parking_lot = "0.12"
+thiserror = "1.0"
+smritidb-core = { path = "../core-rs", version = "0.1.0" }
+
+[build-dependencies]
+uniffi = { version = "0.28", features = ["build"] }

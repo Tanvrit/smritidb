@@ -1,0 +1,83 @@
+namespace smritidb {
+    /// Spec version this FFI surface targets. Mirrors `SPEC.md` v0.1.0-draft.
+    string spec_version();
+
+    /// Deterministic random binary hypervector from a seed.
+    /// `dim` MUST be >= 1024. Hypervectors are returned as packed bytes
+    /// (one byte per bit; 0 or 1) per SPEC §1.1.
+    bytes random_hv(bytes seed, u32 dim);
+
+    /// `1 - hamming(a, b) / dim`, in `[0, 1]`. Both inputs must have the
+    /// same length or DimensionMismatch is raised.
+    [Throws=SmritidbError]
+    f64 similarity(bytes a, bytes b);
+
+    /// Element-wise XOR. Self-inverse — `bind(bind(a, b), b) == a`.
+    [Throws=SmritidbError]
+    bytes bind(bytes a, bytes b);
+
+    /// Same operation as `bind`; the name signals intent.
+    [Throws=SmritidbError]
+    bytes unbind(bytes a, bytes b);
+
+    /// Element-wise majority over a list of hypervectors. Ties resolved
+    /// deterministically per SPEC §1.3.
+    [Throws=SmritidbError]
+    bytes bundle(sequence<bytes> hvs);
+
+    /// Cyclic bit rotation by `k`. Positive `k` rotates forward.
+    bytes permute(bytes hv, i32 k);
+
+    /// Map a UTF-8 string to a hypervector via BLAKE3-derived randomness.
+    bytes encode_string(string s, u32 dim);
+
+    /// Map an embedding (a `[-1, 1]`-bounded float vector) to a hypervector
+    /// that approximately preserves cosine similarity.
+    bytes encode_embedding(sequence<f32> embedding, u32 dim);
+};
+
+[Error]
+enum SmritidbError {
+    "DimensionMismatch",
+    "InvalidConfig",
+    "ValueTooLarge",
+    "NotFound",
+    "EmptyInput",
+};
+
+interface Store {
+    /// Open a new in-memory store. `dimension` must be >= 1024.
+    [Throws=SmritidbError]
+    constructor(u32 dimension);
+
+    /// Store an item keyed by a semantic cue. `key` may be a string
+    /// (will be encoded), an embedding (list<f32>), or raw bytes
+    /// (already a hypervector). The returned id is a deterministic
+    /// monotonic identifier.
+    [Throws=SmritidbError]
+    string put(string key, bytes value, sequence<string> tags);
+
+    /// Retrieve the closest matches to `cue` by similarity.
+    [Throws=SmritidbError]
+    sequence<Match> recall(string cue, u32 top_k, f64 min_similarity);
+
+    /// Delete an item by id. Returns true if an item was removed.
+    boolean delete(string id);
+
+    /// Total item count.
+    u32 size();
+
+    /// Configured dimension.
+    u32 dimension();
+
+    /// Spec version this store targets.
+    string spec_version();
+};
+
+dictionary Match {
+    string id;
+    f64 similarity;
+    bytes value;
+    sequence<string> tags;
+    u32 access_count;
+};
