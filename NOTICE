@@ -1,10 +1,11 @@
-Kanerva
-Copyright 2026 Vivek Singh and Kanerva contributors
+Smritidb
+Copyright 2026 Tanvrit Private Limited and Smritidb contributors
 
-This product includes software developed by the Kanerva project.
+This product includes software developed by the Smritidb project at
+Tanvrit Private Limited.
 
-Portions of this work are inspired by, but not directly derived from,
-research publications including:
+The project name draws from the Sanskrit term *smriti* (स्मृति, "memory").
+The mathematical substrate draws from research publications including:
 
   - Kanerva, P. (1988). Sparse Distributed Memory. MIT Press.
   - Plate, T. A. (1995). Holographic Reduced Representations.
@@ -12,7 +13,10 @@ research publications including:
   - Kanerva, P. (2009). Hyperdimensional Computing.
     Cognitive Computation 1(2), 139–159.
 
-The Kanerva Memory Format (KMF) specification is licensed separately
+These works are cited for prior art and intellectual lineage; the
+implementations in this repository are not derivative works of them.
+
+The Smritidb Memory Format (KMF) specification is licensed separately
 under CC-BY-4.0 once the v1.0.0 specification freeze occurs;
 until then it is distributed under the same Apache-2.0 license as
 the reference implementations.

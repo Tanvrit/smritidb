@@ -2,7 +2,11 @@
   "name": "smritidb-monorepo",
   "version": "0.0.0",
   "private": true,
-  "description": "Biology-inspired storage layer — root workspace.",
+  "description": "Smritidb — biology-inspired associative memory standard. Monorepo root.",
+  "author": {
+    "name": "Tanvrit Private Limited",
+    "url": "https://tanvrit.com"
+  },
   "license": "Apache-2.0",
   "packageManager": "pnpm@9.12.0",
   "engines": {

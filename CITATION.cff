@@ -3,11 +3,11 @@ title: "Smritidb: a biology-inspired associative memory layer"
 message: "If you use this software, please cite it as below, alongside the underlying Sparse Distributed Memory paper."
 type: software
 authors:
-  - family-names: Singh
-    given-names: Vivek
-    email: ervivek40@gmail.com
+  - name: "Tanvrit Private Limited"
+    website: "https://tanvrit.com"
+    email: "opensource@tanvrit.com"
 repository-code: "https://github.com/Tanvrit/smritidb"
-url: "https://smritidb.tanvrit.com"
+url: "https://smritidb.com"
 abstract: >
   Smritidb is an open, cross-platform associative memory layer that brings
   hyperdimensional computing and sparse distributed memory out of the lab

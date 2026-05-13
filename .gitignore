@@ -58,3 +58,8 @@ pnpm-debug.log*
 # Cloudflare
 .wrangler/
 .dev.vars
+
+# Per-package LICENSE/NOTICE are copied from repo root at publish time
+# (see packages/*/package.json prepublishOnly script)
+packages/*/LICENSE
+packages/*/NOTICE
