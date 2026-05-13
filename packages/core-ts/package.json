@@ -2,7 +2,7 @@
   "name": "kanerva",
   "version": "0.0.0",
   "description": "Biology-inspired associative memory layer — TypeScript reference implementation.",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",

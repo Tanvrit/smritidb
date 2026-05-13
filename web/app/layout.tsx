@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   title: "Kanerva — an open associative memory standard",
   description:
     "Kanerva is a biology-inspired associative memory layer for every platform. Storage that remembers by partial cue, degrades like a hologram, and consolidates the way you do.",
-  metadataBase: new URL("https://kanerva.dev"),
+  metadataBase: new URL("https://kanervalabs.com"),
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

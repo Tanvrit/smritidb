@@ -57,7 +57,7 @@ function Hero() {
             <span>specification</span>
           </Link>
           <a
-            href="https://github.com/REPLACE_WITH_OWNER/kanerva"
+            href="https://github.com/Tanvrit/kanerva"
             target="_blank"
             rel="noreferrer"
             className="no-underline muted"

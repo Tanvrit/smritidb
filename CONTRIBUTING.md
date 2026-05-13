@@ -77,4 +77,4 @@ Please do **not** open public issues for security vulnerabilities. See [`SECURIT
 
 ## License
 
-By contributing, you agree your contributions are licensed under the [MIT License](LICENSE).
+By contributing, you agree your contributions are licensed under the [Apache License 2.0](LICENSE), including its explicit patent grant.

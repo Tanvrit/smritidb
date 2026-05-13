@@ -17,7 +17,7 @@ export function Nav() {
         <nav className="flex items-baseline gap-7">
           <NavLink href="/manifesto">Manifesto</NavLink>
           <NavLink href="/docs">Spec</NavLink>
-          <NavLink href="https://github.com/REPLACE_WITH_OWNER/kanerva" external>
+          <NavLink href="https://github.com/Tanvrit/kanerva" external>
             Repository
           </NavLink>
         </nav>

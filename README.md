@@ -94,7 +94,7 @@ See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the full process.
 
 ## License
 
-MIT — see [`LICENSE`](LICENSE).
+Apache-2.0 — see [`LICENSE`](LICENSE) and [`NOTICE`](NOTICE). The Apache-2.0 patent grant matters here: implementations of an open associative-memory standard should travel with an explicit, irrevocable patent license from contributors.
 
 ## Citation
 

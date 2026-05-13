@@ -128,7 +128,7 @@ If you work on neuromorphic hardware, memristor designs, or hyperdimensional acc
 
 If you are a researcher in SDM/HDC/VSA — we want your name on the citations file, your eyes on the spec, and your papers in the bibliography.
 
-The project is MIT-licensed. The wire format will be CC-BY. The hosted service, when it ships, will exist in service of the spec, not the other way around.
+The reference implementations are Apache-2.0 licensed (with the explicit patent grant). The wire format will be CC-BY-4.0 once frozen. The hosted service, when it ships, will exist in service of the spec, not the other way around.
 
 ---
 

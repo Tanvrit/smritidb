@@ -336,7 +336,7 @@ After v1.0.0 of the spec, we will:
 
 1. Publish KMF as an [IETF Independent Submission](https://www.rfc-editor.org/about/independent/).
 2. Open a [W3C Community Group](https://www.w3.org/community/groups/) for ongoing evolution.
-3. License the spec document under CC-BY-4.0 (the reference implementations remain MIT).
+3. License the spec document under CC-BY-4.0 (the reference implementations are Apache-2.0).
 
 ---
 

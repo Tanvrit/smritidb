@@ -26,8 +26,8 @@ export function Footer() {
         <div>
           <p className="spec-tag mb-3">license</p>
           <p className="muted leading-relaxed">
-            Implementations <span className="font-mono">MIT</span>.
-            Specification <span className="font-mono">CC-BY-4.0</span> once frozen.
+            Implementations <span className="font-mono">Apache-2.0</span>{" "}
+            (with patent grant). Specification <span className="font-mono">CC-BY-4.0</span> once frozen.
           </p>
         </div>
       </div>

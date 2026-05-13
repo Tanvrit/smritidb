@@ -6,7 +6,8 @@ authors:
   - family-names: Singh
     given-names: Vivek
     email: ervivek40@gmail.com
-repository-code: "https://github.com/REPLACE_WITH_OWNER/kanerva"
+repository-code: "https://github.com/Tanvrit/kanerva"
+url: "https://kanervalabs.com"
 abstract: >
   Kanerva is an open, cross-platform associative memory layer that brings
   hyperdimensional computing and sparse distributed memory out of the lab
@@ -21,7 +22,7 @@ keywords:
   - vector-symbolic-architectures
   - storage
   - content-addressable-memory
-license: MIT
+license: Apache-2.0
 version: 0.0.0
 date-released: 2026-05-13
 references:

@@ -1,6 +1,6 @@
 # kanerva (core-ts)
 
-TypeScript reference implementation of [Kanerva](https://github.com/REPLACE_WITH_OWNER/kanerva) — the open biology-inspired associative memory layer.
+TypeScript reference implementation of [Kanerva](https://github.com/Tanvrit/kanerva) — the open biology-inspired associative memory layer.
 
 **Status:** Phase 0 — spec only. The real code lands in Phase 1, against [`SPEC.md`](../../SPEC.md).
 
@@ -27,4 +27,4 @@ See [`docs/MANIFESTO.md`](../../docs/MANIFESTO.md) for the project's thesis and 
 
 ## License
 
-MIT.
+Apache-2.0 — with the patent grant. See the repo root [`LICENSE`](../../LICENSE) and [`NOTICE`](../../NOTICE).

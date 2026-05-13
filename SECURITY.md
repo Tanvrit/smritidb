@@ -13,7 +13,7 @@ Kanerva is pre-release (Phase 0). No version has reached general availability. S
 
 **Do not open public issues for security vulnerabilities.**
 
-Please email **security@kanerva.dev** (or, until that mailbox exists, the maintainer listed in `MAINTAINERS.md`) with:
+Please email **security@kanervalabs.com** (or, until that mailbox exists, the maintainer listed in `MAINTAINERS.md`) with:
 
 - Affected component(s) and version(s)
 - A description of the vulnerability and its impact

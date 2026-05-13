@@ -28,7 +28,7 @@ export default async function DocsPage() {
             v1.0.0, breaking changes require a major version bump.
           </p>
           <p className="font-mono text-[0.78rem] muted mt-6">
-            <Link href="https://github.com/REPLACE_WITH_OWNER/kanerva/blob/main/SPEC.md" className="accent no-underline">
+            <Link href="https://github.com/Tanvrit/kanerva/blob/main/SPEC.md" className="accent no-underline">
               source on github ↗
             </Link>
             <span className="mx-3 faint">|</span>
