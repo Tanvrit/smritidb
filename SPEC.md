@@ -42,7 +42,7 @@ All operations are deterministic given identical inputs.
 
 The majority operation for an even-sized bundle has ties. The tiebreaker MUST be deterministic and identical across implementations:
 
-> For each bit position with an exact tie, the result bit is `H(D || index || count)[0]` where `H` is BLAKE3 and `||` is byte concatenation. `index` is the bit position (u32 LE), `count` is the bundle multiplicity (u32 LE).
+> For each bit position with an exact tie, the result bit is `H("smritidb/tiebreak" || D || index || count)[0] & 1` where `H` is BLAKE3 and `||` is byte concatenation. The 17-byte ASCII domain prefix `"smritidb/tiebreak"` is prepended for domain separation; `D` is the dimension (u32 LE), `index` is the bit position (u32 LE), `count` is the bundle multiplicity (u32 LE). The output is the low bit of the first BLAKE3 output byte.
 
 This is overkill for correctness but is required for **bit-exact cross-binding reproducibility**, which the KMF wire format depends on.
 
@@ -197,8 +197,8 @@ cleanup.search(cue: Hypervector, k: u32) -> [{ id, similarity }]
 
 ### 4.2 Implementation guidance
 
-- Phase 1 (TS reference): **brute-force linear scan**, parallelized via TypedArrays. Acceptable up to `~100k` items at `D = 10000`.
-- Phase 2+ (Rust): hybrid — brute force below a threshold, LSH or learned index above.
+- **Phase 1 (normative for v0.1.0):** brute-force linear scan over all stored items, parallelized via TypedArrays in the TS reference and a straight-line loop in the Rust core. This is the *only* algorithm a conformant v0.1.0 implementation MAY use for `cleanup.search`. Acceptable up to `~100k` items at `D = 10000`.
+- **Phase 2+ (contemplated, non-normative):** a hybrid approach — brute force below a threshold, LSH or a learned index above — is contemplated for a future v0.2.0 spec revision. Any such acceleration MUST preserve the identity-of-results requirement below or it is not Smritidb.
 - All implementations MUST produce identical top-`k` results for any given `(cue, k, substrate state)`. Tiebreakers on equal similarity are by `id` lexicographic ascending.
 
 This identity-of-results requirement is what makes cross-binding test suites possible.
@@ -313,7 +313,7 @@ Block kinds:
 | Kind | Contents |
 |---|---|
 | `hv_block`   | `n × ceil(D/8)` packed hypervectors. |
-| `meta_block` | `n` rows of `{ id, tags, metadata, createdAt, accessCount, lastAccessedAt }` in MessagePack. |
+| `meta_block` | `n` rows of `{ id, tags, metadata, createdAt, accessCount, lastAccessedAt }`, JSON-encoded (Phase 1; MessagePack contemplated for Phase 2 v0.2.0). |
 | `value_block` | `n` value payloads, length-prefixed. |
 | `attic_block` | Cold-summary entries (see §5.3). |
 
@@ -381,11 +381,20 @@ Each open question is tracked as a `spec` issue.
 function levelHV(embedding: float[]):
   let v = bits(D)                 # all zeros
   for i in 0..len(embedding):
-    let lvl = clamp(round((embedding[i] + 1) * (L - 1) / 2), 0, L - 1)
+    let clamped = clamp(embedding[i], -1.0, 1.0)
+    let level   = round((clamped + 1.0) * (L - 1) / 2.0)   # L = 100; see below
+    let lvl     = clamp(level, 0, L - 1)
     let proj_seed = "lvl:" || i || ":" || lvl
     v = v XOR randomHV(BLAKE3(proj_seed))
   return v
 ```
+
+Normative bracketing:
+
+- `L = 100` thermometer levels.
+- The input is first clamped to `[-1.0, 1.0]`; values outside that range MUST be saturated, not extrapolated.
+- The level computation is exactly `round((clamped + 1.0) * (L - 1) / 2.0)` evaluated in IEEE 754 binary64 (or binary32 with identical results on the in-range domain), with the result of `round` defined as round-half-to-even (banker's rounding) per IEEE 754. The reference implementations use language-native `round` whose specification matches this rule on the well-defined points; the `clamp(., 0, L - 1)` outer step covers the boundary case where rounding could overshoot `L - 1` due to the prior clamp tolerating `+1.0` exactly.
+- `i` and `lvl` are serialised into `proj_seed` as decimal ASCII digits separated by `:`.
 
 This is the binary thermometer-and-projection scheme from Imani et al. (2017), adapted for our `randomHV`.
 
