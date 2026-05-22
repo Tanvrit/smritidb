@@ -36,13 +36,30 @@ namespace smritidb {
     bytes encode_embedding(sequence<f32> embedding, u32 dim);
 };
 
+/// Error surface for the entire FFI. UniFFI maps this to a Kotlin sealed
+/// class hierarchy and a Swift enum with associated values.
 [Error]
-enum SmritidbError {
-    "DimensionMismatch",
-    "InvalidConfig",
-    "ValueTooLarge",
-    "NotFound",
-    "EmptyInput",
+interface SmritidbError {
+    /// Cue/vector dimension does not match the store's configured dimension.
+    DimensionMismatch();
+    /// Invalid store/persistence configuration (e.g. dim < 1024).
+    InvalidConfig();
+    /// Item value exceeds the configured `value_cap_bytes`.
+    ValueTooLarge();
+    /// Item with the given id was not found.
+    NotFound();
+    /// Caller passed an empty input where one is not allowed.
+    EmptyInput();
+    /// Underlying I/O failure (filesystem, etc.). Message is host-facing.
+    Io(string message);
+    /// Underlying database failure (SQLite, etc.). Message is host-facing.
+    Database(string message);
+    /// Snapshot or WAL on disk was unreadable / violated invariants.
+    Corruption(string message);
+    /// JSON / KMF encoding or decoding failure.
+    Encoding(string message);
+    /// Catch-all adapter or store failure.
+    Other(string message);
 };
 
 interface Store {
@@ -80,4 +97,91 @@ dictionary Match {
     bytes value;
     sequence<string> tags;
     u32 access_count;
+};
+
+/// Which persistence adapter a `PersistentStore` should be opened with.
+/// Used by the `PersistenceConfig` dictionary.
+enum AdapterKind {
+    "Memory",
+    "File",
+    "Sqlite",
+};
+
+/// Bundled adapter configuration, exposed for callers that prefer a single
+/// open-by-config entry point over the per-adapter constructors. The `path`
+/// is required for `File` and `Sqlite` adapters; ignored for `Memory`.
+dictionary PersistenceConfig {
+    AdapterKind kind;
+    string? path;
+};
+
+/// Store-level configuration mirrored from `smritidb_core::StoreConfig`.
+/// All fields are optional in the host language — pass nulls / defaults
+/// to inherit the core defaults.
+dictionary StoreOptions {
+    u32 dimension;
+    u32 value_cap_bytes;
+    u32 default_top_k;
+    f64 default_min_similarity;
+};
+
+/// A `PersistentStore` is the persistent counterpart of `Store`. It wraps
+/// `smritidb_core::Store` + an adapter and exposes the same put/recall/get
+/// surface plus `persist()` and `close()`.
+interface PersistentStore {
+    /// Open a SQLite-backed store at `path`. Loads the most recent snapshot
+    /// and replays the WAL on open.
+    [Throws=SmritidbError, Name=open_sqlite]
+    constructor(string path, StoreOptions config);
+
+    /// Open a filesystem-backed store rooted at `path`. The snapshot lives at
+    /// `<path>` and the WAL at `<path>.wal`.
+    [Name=open_file, Throws=SmritidbError]
+    constructor(string path, StoreOptions config);
+
+    /// Open an ephemeral in-memory store backed by `MemoryAdapter`. Useful
+    /// for tests and short-lived workloads.
+    [Name=open_memory, Throws=SmritidbError]
+    constructor(StoreOptions config);
+
+    /// Open from a `PersistenceConfig`. Equivalent to the per-adapter
+    /// constructors above.
+    [Name=open, Throws=SmritidbError]
+    constructor(PersistenceConfig persistence, StoreOptions config);
+
+    /// Store an item keyed by a string cue. `metadata`, if present, is
+    /// a JSON-encoded object/value passed through verbatim.
+    [Throws=SmritidbError]
+    string put(string key, bytes value, sequence<string> tags, string? metadata);
+
+    /// Recall top-k items by similarity to `cue`.
+    [Throws=SmritidbError]
+    sequence<Match> recall(string cue, u32 top_k, f64 min_similarity);
+
+    /// Delete by id. Returns true if an item was removed.
+    boolean delete(string id);
+
+    /// Look up an item by id. Returns the matching record's value/tags.
+    [Throws=SmritidbError]
+    Match get(string id);
+
+    /// Total item count.
+    [Throws=SmritidbError]
+    u32 size();
+
+    /// Configured dimension.
+    [Throws=SmritidbError]
+    u32 dimension();
+
+    /// Run a consolidation pass. Returns the number of bits flipped.
+    [Throws=SmritidbError]
+    u32 consolidate();
+
+    /// Force a snapshot to be written through the adapter (and truncates the WAL).
+    [Throws=SmritidbError]
+    void persist();
+
+    /// Release adapter resources. Idempotent.
+    [Throws=SmritidbError]
+    void close();
 };

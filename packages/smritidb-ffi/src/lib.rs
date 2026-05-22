@@ -12,6 +12,7 @@
 //! ```
 
 use std::collections::HashMap;
+use std::sync::Arc;
 
 use parking_lot::Mutex;
 use smritidb_core as core;
@@ -69,6 +70,9 @@ pub fn encode_embedding(embedding: Vec<f32>, dim: u32) -> Vec<u8> {
 
 // ---- Error type ----
 
+/// FFI-facing error type. UniFFI lowers this to a Kotlin sealed class
+/// (`SmritidbException`) and a Swift enum (`SmritidbError`) with associated
+/// `message: String` values where applicable.
 #[derive(Error, Debug)]
 pub enum SmritidbError {
     #[error("dimension mismatch")]
@@ -81,9 +85,53 @@ pub enum SmritidbError {
     NotFound,
     #[error("empty input")]
     EmptyInput,
+    #[error("io error: {message}")]
+    Io { message: String },
+    #[error("database error: {message}")]
+    Database { message: String },
+    #[error("corruption: {message}")]
+    Corruption { message: String },
+    #[error("encoding error: {message}")]
+    Encoding { message: String },
+    #[error("error: {message}")]
+    Other { message: String },
 }
 
-// ---- Store class ----
+impl From<core::PersistenceError> for SmritidbError {
+    fn from(value: core::PersistenceError) -> Self {
+        match value {
+            core::PersistenceError::Io(err) => SmritidbError::Io {
+                message: err.to_string(),
+            },
+            core::PersistenceError::Database(msg) => SmritidbError::Database { message: msg },
+            core::PersistenceError::Corruption(msg) => SmritidbError::Corruption { message: msg },
+            core::PersistenceError::Other(msg) => SmritidbError::Other { message: msg },
+        }
+    }
+}
+
+impl From<core::StoreError> for SmritidbError {
+    fn from(value: core::StoreError) -> Self {
+        match value {
+            core::StoreError::DimensionMismatch { .. } => SmritidbError::DimensionMismatch,
+            core::StoreError::ValueTooLarge { .. } => SmritidbError::ValueTooLarge,
+            core::StoreError::NotFound(_) => SmritidbError::NotFound,
+            core::StoreError::InvalidConfig(_) => SmritidbError::InvalidConfig,
+            core::StoreError::CorruptSnapshot(msg) => SmritidbError::Corruption { message: msg },
+            core::StoreError::Persistence(err) => SmritidbError::from(err),
+        }
+    }
+}
+
+impl From<core::KmfError> for SmritidbError {
+    fn from(value: core::KmfError) -> Self {
+        SmritidbError::Encoding {
+            message: value.to_string(),
+        }
+    }
+}
+
+// ---- Match dictionary, shared by both Store and PersistentStore ----
 
 pub struct Match {
     pub id: String,
@@ -92,6 +140,12 @@ pub struct Match {
     pub tags: Vec<String>,
     pub access_count: u32,
 }
+
+// ---- legacy in-memory Store (kept for backward compatibility) ----
+//
+// This is a thin toy substrate maintained for parity with the original
+// FFI surface. New consumers should prefer `PersistentStore`, which is
+// backed by the real `smritidb_core::Store`.
 
 struct ItemState {
     key: Vec<u8>,
@@ -200,5 +254,211 @@ impl Store {
 
     pub fn spec_version(&self) -> String {
         core::SPEC_VERSION.to_string()
+    }
+}
+
+// ---- PersistentStore — wraps smritidb_core::Store + a persistence adapter ----
+
+/// Which persistence adapter to back a `PersistentStore` with.
+///
+/// UniFFI lowers this to a Kotlin `enum class` and a Swift `enum`.
+#[derive(Debug, Clone, Copy)]
+pub enum AdapterKind {
+    Memory,
+    File,
+    Sqlite,
+}
+
+/// Bundled adapter configuration. `path` is required for `File` and
+/// `Sqlite` adapters and ignored for `Memory`.
+#[derive(Debug, Clone)]
+pub struct PersistenceConfig {
+    pub kind: AdapterKind,
+    pub path: Option<String>,
+}
+
+/// Store-level configuration. All fields map to `smritidb_core::StoreConfig`;
+/// callers that want defaults can pass `0` for any field and the host shim
+/// will substitute the core default.
+#[derive(Debug, Clone, Copy)]
+pub struct StoreOptions {
+    pub dimension: u32,
+    pub value_cap_bytes: u32,
+    pub default_top_k: u32,
+    pub default_min_similarity: f64,
+}
+
+impl StoreOptions {
+    fn to_core(&self) -> core::StoreConfig {
+        let defaults = core::StoreConfig::default();
+        core::StoreConfig {
+            dimension: if self.dimension == 0 {
+                defaults.dimension
+            } else {
+                self.dimension as usize
+            },
+            value_cap_bytes: if self.value_cap_bytes == 0 {
+                defaults.value_cap_bytes
+            } else {
+                self.value_cap_bytes as usize
+            },
+            default_top_k: if self.default_top_k == 0 {
+                defaults.default_top_k
+            } else {
+                self.default_top_k as usize
+            },
+            default_min_similarity: if self.default_min_similarity == 0.0 {
+                defaults.default_min_similarity
+            } else {
+                self.default_min_similarity
+            },
+            consolidation: defaults.consolidation,
+        }
+    }
+}
+
+/// Persistent associative store. Wraps `smritidb_core::Store` and a
+/// `PersistenceAdapter`; both are guarded behind interior mutexes so the
+/// type can be shared across UniFFI's `Arc<Self>` handles.
+pub struct PersistentStore {
+    inner: Mutex<core::Store>,
+    adapter: Arc<dyn core::PersistenceAdapter + Send + Sync>,
+}
+
+impl PersistentStore {
+    /// SQLite-backed `PersistentStore`. The database is opened (or created)
+    /// at `path`; any pre-existing snapshot is loaded and the WAL replayed.
+    pub fn open_sqlite(path: String, config: StoreOptions) -> Result<Self, SmritidbError> {
+        let adapter: Arc<dyn core::PersistenceAdapter + Send + Sync> =
+            Arc::new(core::persist::SqliteAdapter::open(&path)?);
+        Self::from_adapter(adapter, config)
+    }
+
+    /// Filesystem-backed `PersistentStore`. The snapshot lives at `path`,
+    /// the WAL at `<path>.wal`.
+    pub fn open_file(path: String, config: StoreOptions) -> Result<Self, SmritidbError> {
+        let adapter: Arc<dyn core::PersistenceAdapter + Send + Sync> =
+            Arc::new(core::persist::FileSystemAdapter::new(path));
+        Self::from_adapter(adapter, config)
+    }
+
+    /// In-memory `PersistentStore`, backed by `MemoryAdapter`. Useful for
+    /// tests and ephemeral workloads.
+    pub fn open_memory(config: StoreOptions) -> Result<Self, SmritidbError> {
+        let adapter: Arc<dyn core::PersistenceAdapter + Send + Sync> =
+            Arc::new(core::persist::MemoryAdapter::new());
+        Self::from_adapter(adapter, config)
+    }
+
+    /// Open from a `PersistenceConfig`. Equivalent to the per-adapter
+    /// constructors above.
+    pub fn open(
+        persistence: PersistenceConfig,
+        config: StoreOptions,
+    ) -> Result<Self, SmritidbError> {
+        match persistence.kind {
+            AdapterKind::Memory => Self::open_memory(config),
+            AdapterKind::File => {
+                let path = persistence.path.ok_or(SmritidbError::InvalidConfig)?;
+                Self::open_file(path, config)
+            }
+            AdapterKind::Sqlite => {
+                let path = persistence.path.ok_or(SmritidbError::InvalidConfig)?;
+                Self::open_sqlite(path, config)
+            }
+        }
+    }
+
+    fn from_adapter(
+        adapter: Arc<dyn core::PersistenceAdapter + Send + Sync>,
+        config: StoreOptions,
+    ) -> Result<Self, SmritidbError> {
+        let core_cfg = config.to_core();
+        // `open_persistent_store` expects `Arc<dyn PersistenceAdapter>`; the
+        // bound `Send + Sync` is enforced by the trait itself.
+        let store = core::open_persistent_store(adapter.clone(), core_cfg)?;
+        Ok(Self {
+            inner: Mutex::new(store),
+            adapter,
+        })
+    }
+
+    pub fn put(
+        &self,
+        key: String,
+        value: Vec<u8>,
+        tags: Vec<String>,
+        metadata: Option<String>,
+    ) -> Result<String, SmritidbError> {
+        let metadata_value = match metadata {
+            Some(raw) => serde_json::from_str(&raw).map_err(|err| SmritidbError::Encoding {
+                message: err.to_string(),
+            })?,
+            None => serde_json::Value::Null,
+        };
+        let mut store = self.inner.lock();
+        let tag_refs: Vec<&str> = tags.iter().map(|s| s.as_str()).collect();
+        let item = store.put_string(&key, &value, &tag_refs, metadata_value)?;
+        Ok(item.id)
+    }
+
+    pub fn recall(
+        &self,
+        cue: String,
+        top_k: u32,
+        min_similarity: f64,
+    ) -> Result<Vec<Match>, SmritidbError> {
+        let mut store = self.inner.lock();
+        let hits = store.recall_string(&cue, top_k as usize, min_similarity);
+        Ok(hits
+            .into_iter()
+            .map(|m| Match {
+                id: m.item.id,
+                similarity: m.similarity,
+                value: m.item.value,
+                tags: m.item.tags,
+                access_count: m.item.access_count,
+            })
+            .collect())
+    }
+
+    pub fn delete(&self, id: String) -> bool {
+        self.inner.lock().delete(&id)
+    }
+
+    pub fn get(&self, id: String) -> Result<Match, SmritidbError> {
+        let store = self.inner.lock();
+        let item = store.get(&id)?;
+        Ok(Match {
+            id: item.id.clone(),
+            similarity: 1.0,
+            value: item.value.clone(),
+            tags: item.tags.clone(),
+            access_count: item.access_count,
+        })
+    }
+
+    pub fn size(&self) -> Result<u32, SmritidbError> {
+        Ok(self.inner.lock().size() as u32)
+    }
+
+    pub fn dimension(&self) -> Result<u32, SmritidbError> {
+        Ok(self.inner.lock().dimension() as u32)
+    }
+
+    pub fn consolidate(&self) -> Result<u32, SmritidbError> {
+        let report = self.inner.lock().consolidate(None);
+        Ok(report.bits_flipped as u32)
+    }
+
+    pub fn persist(&self) -> Result<(), SmritidbError> {
+        let store = self.inner.lock();
+        core::persist_store(&*store, self.adapter.as_ref())?;
+        Ok(())
+    }
+
+    pub fn close(&self) -> Result<(), SmritidbError> {
+        self.adapter.close()?;
+        Ok(())
     }
 }

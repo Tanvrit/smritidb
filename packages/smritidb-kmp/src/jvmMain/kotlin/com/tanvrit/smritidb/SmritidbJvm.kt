@@ -95,4 +95,13 @@ private fun translateUniffiException(e: UniffiException): SmritidbException = wh
     is UniffiException.NotFound -> SmritidbException.NotFound("?")
     is UniffiException.ValueTooLarge -> SmritidbException.ValueTooLarge()
     is UniffiException.EmptyInput -> SmritidbException.EmptyInput()
+    // Persistence-layer variants added in Phase B1. The commonMain surface
+    // doesn't yet expose dedicated subclasses for these — surface them
+    // through `InvalidConfig` with the inner message so callers still see
+    // the substance.
+    is UniffiException.Io -> SmritidbException.InvalidConfig("io: ${e.msg}")
+    is UniffiException.Database -> SmritidbException.InvalidConfig("database: ${e.msg}")
+    is UniffiException.Corruption -> SmritidbException.InvalidConfig("corruption: ${e.msg}")
+    is UniffiException.Encoding -> SmritidbException.InvalidConfig("encoding: ${e.msg}")
+    is UniffiException.Other -> SmritidbException.InvalidConfig("other: ${e.msg}")
 }

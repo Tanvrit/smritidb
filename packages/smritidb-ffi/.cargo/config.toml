@@ -1,0 +1,82 @@
+# Cross-compilation toolchain wiring for Android Native + Linux Native
+# targets.
+#
+# Used by `cargo build --target <triple>` when producing
+# `libsmritidb_ffi.a` for the Kotlin/Native targets in
+# `packages/smritidb-kmp`. The Apple targets do NOT need any entries
+# here — they cross-compile out of the box on macOS.
+#
+# Android Native:
+#   `ANDROID_NDK_HOME` is read at the time `cargo build` is invoked.
+#   Homebrew's `android-ndk` cask installs the NDK at
+#   `/opt/homebrew/share/android-ndk` and exports the env var via its
+#   caveat, so the typical invocation is:
+#
+#     export ANDROID_NDK_HOME=/opt/homebrew/share/android-ndk
+#     cargo build --release --target aarch64-linux-android
+#     cargo build --release --target x86_64-linux-android
+#
+#   API level 21 matches the Kotlin/Native Android Native compiler
+#   (target-toolchain-2-osx-android_ndk uses `aarch64-linux-android21-clang`
+#   at the test-link step). Picking the same level on both sides avoids
+#   any ABI / SDK-version drift between the two artifacts that get
+#   stitched into the final executable.
+#
+# Linux Native (x64 + arm64 glibc):
+#   On a Mac host we cross-compile with the `x86_64-unknown-linux-gnu`
+#   and `aarch64-unknown-linux-gnu` GCC toolchains from the
+#   `messense/macos-cross-toolchains` Homebrew tap. The compiler does
+#   the C work fine, but it ships modern headers (glibc 2.39+) — and
+#   sqlite3.c (bundled by rusqlite) picks up symbols like
+#   `fcntl64@GLIBC_2.28` from them. The Kotlin/Native linker, in
+#   contrast, uses its own bundled sysroot (glibc 2.19 on x64, 2.25 on
+#   arm64) at the test/main link step, so the final binary cannot
+#   resolve those newer symbols.
+#
+#   The fix is to point cc-rs and the rustc linker invocation at the
+#   Kotlin/Native sysroot. That sysroot ships inside the bundled
+#   `~/.konan/dependencies/<triple>-gcc-8.3.0-glibc-2.{19,25}-...`
+#   tarball, which Kotlin/Native materialises on first
+#   `:compileKotlinLinuxX64` / `:compileKotlinLinuxArm64` run.
+#
+#   Install once:
+#
+#     brew tap messense/macos-cross-toolchains
+#     brew install messense/macos-cross-toolchains/x86_64-unknown-linux-gnu
+#     brew install messense/macos-cross-toolchains/aarch64-unknown-linux-gnu
+#     rustup target add x86_64-unknown-linux-gnu aarch64-unknown-linux-gnu
+#     # warm Kotlin/Native's bundled sysroot:
+#     gradle :smritidb-kmp:compileKotlinLinuxX64 :smritidb-kmp:compileKotlinLinuxArm64
+#
+#   Then build the Rust archives:
+#
+#     SYSROOT_X64=$HOME/.konan/dependencies/x86_64-unknown-linux-gnu-gcc-8.3.0-glibc-2.19-kernel-4.9-2/x86_64-unknown-linux-gnu/sysroot
+#     SYSROOT_ARM64=$HOME/.konan/dependencies/aarch64-unknown-linux-gnu-gcc-8.3.0-glibc-2.25-kernel-4.9-2/aarch64-unknown-linux-gnu/sysroot
+#     CFLAGS_x86_64_unknown_linux_gnu="--sysroot=$SYSROOT_X64" \
+#       CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_RUSTFLAGS="-C link-arg=--sysroot=$SYSROOT_X64" \
+#       cargo build --release --target x86_64-unknown-linux-gnu
+#     CFLAGS_aarch64_unknown_linux_gnu="--sysroot=$SYSROOT_ARM64" \
+#       CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_RUSTFLAGS="-C link-arg=--sysroot=$SYSROOT_ARM64" \
+#       cargo build --release --target aarch64-unknown-linux-gnu
+#
+#   On a native Linux runner the messense toolchain isn't installed and
+#   neither is the K/N sysroot — `cargo build` then just uses the
+#   default `cc` and produces ABI-compatible artefacts. The `linker =`
+#   entries below are still required for the macOS cross path (they
+#   pick the messense binaries off `$PATH`); they're inert on Linux.
+
+[target.aarch64-linux-android]
+linker = "aarch64-linux-android21-clang"
+ar = "llvm-ar"
+
+[target.x86_64-linux-android]
+linker = "x86_64-linux-android21-clang"
+ar = "llvm-ar"
+
+[target.x86_64-unknown-linux-gnu]
+linker = "x86_64-unknown-linux-gnu-gcc"
+ar = "x86_64-unknown-linux-gnu-ar"
+
+[target.aarch64-unknown-linux-gnu]
+linker = "aarch64-unknown-linux-gnu-gcc"
+ar = "aarch64-unknown-linux-gnu-ar"

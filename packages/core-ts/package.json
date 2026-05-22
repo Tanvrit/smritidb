@@ -1,20 +1,16 @@
 {
   "name": "@tanvrit/smritidb",
   "version": "0.1.0",
-  "description": "An open biology-inspired associative memory layer. Storage that remembers by partial cue, degrades like a hologram, and consolidates with use. TypeScript reference implementation.",
-  "author": {
-    "name": "Tanvrit Private Limited",
-    "url": "https://tanvrit.com",
-    "email": "opensource@tanvrit.com"
-  },
+  "description": "TypeScript reference implementation of Smritidb binary HDC associative memory.",
+  "author": "Tanvrit Private Limited <ervivek40@gmail.com>",
   "license": "Apache-2.0",
-  "homepage": "https://smritidb.com",
+  "homepage": "https://kanervalabs.com/smritidb",
   "bugs": {
-    "url": "https://github.com/Tanvrit/smritidb/issues"
+    "url": "https://github.com/kanervalabs/smritidb/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Tanvrit/smritidb.git",
+    "url": "git+https://github.com/kanervalabs/smritidb.git",
     "directory": "packages/core-ts"
   },
   "type": "module",
@@ -28,7 +24,7 @@
     }
   },
   "files": [
-    "dist",
+    "dist/",
     "README.md",
     "LICENSE",
     "NOTICE"
@@ -41,19 +37,14 @@
     "prepublishOnly": "cp ../../LICENSE LICENSE && cp ../../NOTICE NOTICE && pnpm test && pnpm build"
   },
   "keywords": [
+    "hyperdimensional",
     "associative-memory",
-    "hyperdimensional-computing",
-    "sparse-distributed-memory",
-    "vector-symbolic-architectures",
-    "content-addressable",
     "vector-database",
-    "semantic-search",
-    "ai-memory",
-    "smriti",
-    "storage"
+    "binary-hdc",
+    "kanerva"
   ],
   "engines": {
-    "node": ">=22.0.0"
+    "node": ">=20"
   },
   "publishConfig": {
     "access": "public",
@@ -64,6 +55,8 @@
   },
   "devDependencies": {
     "@types/node": "^22.9.0",
-    "tsx": "^4.19.0"
+    "better-sqlite3": "^12.10.0",
+    "tsx": "^4.19.0",
+    "typedoc": "^0.28.19"
   }
 }

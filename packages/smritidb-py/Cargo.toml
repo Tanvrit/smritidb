@@ -2,11 +2,16 @@
 name = "smritidb-py"
 version = "0.1.0"
 edition = "2021"
+rust-version = "1.75"
 license = "Apache-2.0"
 description = "Smritidb Python bindings — pyo3 wrapper over the Rust core."
-authors = ["Tanvrit Private Limited <opensource@tanvrit.com>"]
-homepage = "https://smritidb.com"
-repository = "https://github.com/Tanvrit/smritidb"
+authors = ["Tanvrit Private Limited <ervivek40@gmail.com>"]
+homepage = "https://kanervalabs.com"
+repository = "https://github.com/kanervalabs/smritidb"
+documentation = "https://docs.rs/smritidb-py"
+readme = "README.md"
+keywords = ["hyperdimensional", "associative-memory", "vector-database", "binary-hdc", "kanerva"]
+categories = ["data-structures", "database"]
 publish = false
 
 [lib]
@@ -15,4 +20,5 @@ crate-type = ["cdylib"]
 
 [dependencies]
 pyo3 = { version = "0.22", features = ["extension-module", "abi3-py39"] }
-smritidb-core = { path = "../core-rs", version = "0.1.0" }
+smritidb-core = { path = "../core-rs", version = "0.1.0", default-features = true }
+serde_json = { version = "1", features = ["preserve_order"] }

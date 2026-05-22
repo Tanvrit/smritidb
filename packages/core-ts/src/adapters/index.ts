@@ -93,5 +93,10 @@ export function withPersistence(
 export { MemoryAdapter } from "./memory.js";
 export { fsAdapter } from "./fs.js";
 export { indexedDbAdapter } from "./indexeddb.js";
-export { sqliteAdapter } from "./sqlite.js";
-export type { SqliteAdapterOptions, SqliteDatabase } from "./sqlite.js";
+export { sqliteAdapter, migrateLegacySchema } from "./sqlite.js";
+export type {
+  SqliteAdapterOptions,
+  SqliteDatabase,
+  SqliteStatement,
+  SqliteStorageAdapter,
+} from "./sqlite.js";

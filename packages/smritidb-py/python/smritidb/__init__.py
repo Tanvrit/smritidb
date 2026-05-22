@@ -8,7 +8,11 @@ from __future__ import annotations
 
 from ._native import (
     SPEC_VERSION,
+    PersistenceError,
+    PersistentStore,
+    SmritidbError,
     Store,
+    StoreError,
     bind,
     bundle,
     encode_embedding,
@@ -21,7 +25,11 @@ from ._native import (
 
 __all__ = [
     "SPEC_VERSION",
+    "PersistenceError",
+    "PersistentStore",
+    "SmritidbError",
     "Store",
+    "StoreError",
     "bind",
     "bundle",
     "encode_embedding",

@@ -2,7 +2,15 @@
 
 UniFFI bindings for [Smritidb](https://smritidb.com) — generates Kotlin (Android / JVM) and Swift (iOS / macOS) surfaces over the Rust core, from a single declarative interface (`src/smritidb.udl`).
 
-Same primitives as the TypeScript, Python, and pure Rust bindings, bit-exact across all implementations.
+This crate is the upstream of `packages/smritidb-kmp` (Kotlin Multiplatform) and of the Swift-only consumers. Same primitives as the TypeScript, Python, and pure-Rust bindings, bit-exact across all implementations.
+
+## What it is
+
+- A cdylib `libsmritidb_ffi.{so,dylib,dll}` wrapping `smritidb-core`.
+- A `uniffi-bindgen` binary that emits Kotlin (`bindings/kotlin/`) and Swift (`bindings/swift/`) sources from `src/smritidb.udl`.
+- Test harness (`tests/`) that round-trips the generated bindings against the cdylib.
+
+The Kotlin output is then consumed by `smritidb-kmp` on the JVM target; the Native targets in `smritidb-kmp` use the Cinterop-friendly C ABI emitted by the same UniFFI layer (`smritidbFFI.h`).
 
 ## What gets generated
 
@@ -79,13 +87,22 @@ for h in hits {
 
 For an iOS app, build the static lib for `aarch64-apple-ios` + `aarch64-apple-ios-sim` + `x86_64-apple-ios-sim`, wrap into an `xcframework`, and pair with the generated `.swift` + `.modulemap`.
 
-## Kotlin Multiplatform (Phase 3.5)
+## Kotlin Multiplatform
 
-A pure-KMP wrapper consuming the UniFFI Kotlin output across Android, JVM, iOS, and JS targets lives in `packages/smritidb-kmp/` (scaffolded; full KMP packaging is a follow-up).
+The pure-KMP wrapper consuming this UniFFI output across JVM, Apple (iOS / macOS), Android Native, Linux, and JS / WasmJs targets lives in [`packages/smritidb-kmp`](../smritidb-kmp). The KMP module's JVM target lifts the generated `bindings/kotlin/` plus the cdylib via JNA; the Native targets share the same UniFFI C header (`smritidbFFI.h`) through Cinterop. Building the KMP module triggers the bindgen step automatically.
 
-## Spec compliance
+## Docs
 
-Every binding round-trips the [Phase 0 conformance properties](../../notebooks/phase0_hdc_validation.ipynb):
+- API reference (rustdoc): [`docs/api/rust/doc/smritidb_ffi/`](../../docs/api/rust/doc/smritidb_ffi/index.html)
+- Generated Kotlin: `bindings/kotlin/uniffi/smritidb/smritidb.kt`
+- Generated Swift: `bindings/swift/smritidb.swift` + `smritidbFFI.h` + `smritidbFFI.modulemap`
+
+## Tests
+
+**6 tests passing.** Run `cargo test --release` from this directory.
+
+Every binding round-trips the Phase 0 conformance properties:
+
 - `random_hv(seed, dim)` is deterministic
 - `similarity(a, a) == 1.0`; random-pair similarity ≈ 0.5
 - `bind` is self-inverse: `bind(bind(a, b), b) == a`
