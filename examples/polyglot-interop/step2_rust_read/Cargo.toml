@@ -1,0 +1,20 @@
+[package]
+name = "step2_rust_read"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+# Standalone crate (not part of the smritidb workspace) so it doesn't perturb
+# the workspace lockfile. We depend on `smritidb-core` via a relative path,
+# pulling in the same crate that the Python and Kotlin bindings consume.
+[workspace]
+
+[dependencies]
+smritidb-core = { path = "../../../packages/core-rs", default-features = false, features = ["persist-sqlite"] }
+
+[[bin]]
+name = "step2_rust_read"
+path = "src/main.rs"
+
+[profile.release]
+opt-level = 3

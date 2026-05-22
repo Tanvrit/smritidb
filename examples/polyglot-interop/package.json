@@ -1,0 +1,15 @@
+{
+  "name": "smritidb-polyglot-interop",
+  "version": "0.0.0",
+  "private": true,
+  "description": "End-to-end polyglot interop demo for Smritidb. See README.md.",
+  "type": "module",
+  "scripts": {
+    "step4": "node --import tsx step4_ts_read.ts"
+  },
+  "dependencies": {
+    "@tanvrit/smritidb": "file:../../packages/core-ts",
+    "better-sqlite3": "^12.10.0",
+    "tsx": "^4.19.0"
+  }
+}

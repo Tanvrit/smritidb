@@ -5,6 +5,7 @@
   "description": "Framework-agnostic long-term-memory adapter for LLM agents, built on @tanvrit/smritidb.",
   "type": "module",
   "scripts": {
+    "start": "tsx demo.ts",
     "demo": "tsx demo.ts"
   },
   "dependencies": {

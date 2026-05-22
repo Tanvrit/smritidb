@@ -122,4 +122,4 @@ for (const noise of [0, 0.1, 0.2, 0.3, 0.4]) {
   console.log(`bit-flip rate=${noise.toFixed(2)}  recall@1=${(correct / trials).toFixed(2)}`);
 }
 
-console.log("\n✓ demo complete — see examples/semantic-notebook/persistent.ts for the FS adapter example.");
+console.log("\n✓ demo complete — see examples/semantic-notebook/persistent.ts for the SQLite-backed persistent example.");

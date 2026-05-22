@@ -5,6 +5,7 @@
   "description": "A tiny CLI showing fuzzy semantic recall and holographic degradation via @tanvrit/smritidb.",
   "type": "module",
   "scripts": {
+    "start": "tsx persistent.ts",
     "demo": "tsx index.ts",
     "demo:persistent": "tsx persistent.ts"
   },

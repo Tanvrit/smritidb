@@ -18,6 +18,7 @@ import {
   fsAdapter,
   openPersistentStore,
   persistStore,
+  sqliteAdapter,
   type StorageAdapter,
 } from "@tanvrit/smritidb";
 
@@ -133,7 +134,10 @@ export class AgentMemory {
 }
 
 /**
- * Convenience: open a memory backed by a file on disk.
+ * Convenience: open a memory backed by a single .kmf file on disk (FS adapter).
+ *
+ * Best for single-process agents that want a portable on-disk file and don't
+ * care about concurrent readers.
  *
  *     const memory = await openFileBackedMemory("/var/lib/myagent/memory.kmf");
  *     await memory.remember("The user prefers brevity in summaries.");
@@ -144,4 +148,22 @@ export async function openFileBackedMemory(
   config: Omit<AgentMemoryConfig, "adapter"> = {},
 ): Promise<AgentMemory> {
   return AgentMemory.open({ ...config, adapter: fsAdapter(path) });
+}
+
+/**
+ * Convenience: open a memory backed by a SQLite database file. Uses the
+ * canonical `smritidb_snapshot` / `smritidb_wal` schema, so the same file is
+ * readable from any Smritidb language binding (Rust, Python, Kotlin, …) via
+ * its native `PersistentStore`.
+ *
+ *     const memory = await openSqliteBackedMemory("/var/lib/myagent/memory.db");
+ *
+ * The SQLite adapter is also durable across `Ctrl-C`: every persist() is a
+ * single transactional row update, so partial writes can't corrupt the file.
+ */
+export async function openSqliteBackedMemory(
+  path: string,
+  config: Omit<AgentMemoryConfig, "adapter"> = {},
+): Promise<AgentMemory> {
+  return AgentMemory.open({ ...config, adapter: sqliteAdapter(path) });
 }
