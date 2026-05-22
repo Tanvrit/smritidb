@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RootNamespace>Smritidb</RootNamespace>
+    <AssemblyName>Smritidb</AssemblyName>
+
+    <PackageId>Smritidb</PackageId>
+    <Version>0.1.0</Version>
+    <Authors>Tanvrit Private Limited</Authors>
+    <Company>Tanvrit Private Limited</Company>
+    <Description>.NET binding for Smritidb binary HDC associative memory, via P/Invoke over libsmritidb_c.</Description>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageProjectUrl>https://kanervalabs.com/smritidb</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/kanervalabs/smritidb</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>hyperdimensional;associative-memory;vector-database;binary-hdc;kanerva</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <Copyright>Copyright 2026 Tanvrit Private Limited and Smritidb contributors</Copyright>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" Condition="Exists('..\..\README.md')" />
+  </ItemGroup>
+
+</Project>

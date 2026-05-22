@@ -1,0 +1,19 @@
+name: smritidb
+description: >-
+  Dart/Flutter binding for Smritidb binary HDC associative memory. Backed by
+  the packages/smritidb-c shared library via dart:ffi.
+version: 0.1.0
+homepage: https://kanervalabs.com/smritidb
+repository: https://github.com/kanervalabs/smritidb
+issue_tracker: https://github.com/kanervalabs/smritidb/issues
+publish_to: none
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  ffi: ^2.1.0
+
+dev_dependencies:
+  test: ^1.24.0
+  lints: ^3.0.0

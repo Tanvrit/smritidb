@@ -1,0 +1,22 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Smritidb", "src\Smritidb\Smritidb.csproj", "{6F8B4D7E-1AA0-4D3F-9F2F-3A0AD2B6BC10}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Smritidb.Tests", "tests\Smritidb.Tests\Smritidb.Tests.csproj", "{2F9A77B0-9D2E-4D9F-9A6B-4F86C2F4A1A0}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{6F8B4D7E-1AA0-4D3F-9F2F-3A0AD2B6BC10}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6F8B4D7E-1AA0-4D3F-9F2F-3A0AD2B6BC10}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6F8B4D7E-1AA0-4D3F-9F2F-3A0AD2B6BC10}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6F8B4D7E-1AA0-4D3F-9F2F-3A0AD2B6BC10}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2F9A77B0-9D2E-4D9F-9A6B-4F86C2F4A1A0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2F9A77B0-9D2E-4D9F-9A6B-4F86C2F4A1A0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2F9A77B0-9D2E-4D9F-9A6B-4F86C2F4A1A0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2F9A77B0-9D2E-4D9F-9A6B-4F86C2F4A1A0}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
