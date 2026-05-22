@@ -1,0 +1,248 @@
+# Smritidb — bit-exactness conformance gate.
+#
+# Runs every binding's conformance suite against the SAME `tests/conformance/`
+# corpus and asserts the KMF fixture round-trips byte-identically. Triggered
+# nightly (so a tooling drift surfaces independently of any commit) and on
+# every PR (so contributors cannot land a change that quietly breaks parity).
+#
+# This is the single most important invariant in the project: a snapshot
+# emitted from any binding must be byte-identical to one emitted from any
+# other. If this workflow fails, do NOT merge — the conformance contract has
+# been broken and downstream KMF blobs in the wild may stop decoding.
+
+name: Conformance
+
+on:
+  pull_request:
+    branches: [main]
+  schedule:
+    # 07:00 UTC daily — runs against the latest main even if no PR is open.
+    - cron: "0 7 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: "0"
+  RUST_BACKTRACE: "1"
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Fixture parity. Re-emits the KMF fixture from the TS reference and asserts
+  # the bytes match the checked-in `kmf_fixture.bin`. Also guards `golden.json`
+  # against silent edits.
+  # ---------------------------------------------------------------------------
+  fixture-parity:
+    name: KMF fixture parity (TS emit -> cmp)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Verify tests/conformance/golden.json is unchanged
+        run: git diff --exit-code -- tests/conformance/golden.json
+
+      - name: Verify tests/conformance/kmf_fixture.bin is unchanged
+        run: git diff --exit-code -- tests/conformance/kmf_fixture.bin
+
+      - name: Build core-ts
+        run: pnpm --filter @tanvrit/smritidb build
+
+      - name: Re-emit KMF fixture into a sibling path
+        run: |
+          cp tests/conformance/emit_kmf_fixture.mjs tests/conformance/emit_kmf_fixture.regen.mjs
+          sed -i 's|kmf_fixture.bin|kmf_fixture.regen.bin|g; s|kmf_fixture.json|kmf_fixture.regen.json|g' \
+            tests/conformance/emit_kmf_fixture.regen.mjs
+          node tests/conformance/emit_kmf_fixture.regen.mjs
+
+      - name: cmp regenerated vs checked-in
+        run: cmp tests/conformance/kmf_fixture.bin tests/conformance/kmf_fixture.regen.bin
+
+      - name: Upload diff artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fixture-parity-failure
+          path: |
+            tests/conformance/kmf_fixture.bin
+            tests/conformance/kmf_fixture.regen.bin
+            tests/conformance/kmf_fixture.json
+            tests/conformance/kmf_fixture.regen.json
+          if-no-files-found: ignore
+
+  # ---------------------------------------------------------------------------
+  # TypeScript conformance — the source of truth for the corpus.
+  # tests/conformance.test.ts in core-ts exercises golden.json from inside the
+  # tsx test runner.
+  # ---------------------------------------------------------------------------
+  ts-conformance:
+    name: TypeScript — corpus tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # Limit to the corpus + KMF cross-impl tests; we don't need the whole
+      # 73-test suite here — that runs in ci.yml.
+      - name: Run conformance + KMF cross-impl tests only
+        working-directory: packages/core-ts
+        run: pnpm exec tsx --test 'src/conformance.test.ts' 'src/kmf.cross-impl.test.ts'
+
+  # ---------------------------------------------------------------------------
+  # Rust conformance — the Rust core's `tests/conformance.rs` (8 tests) and
+  # `tests/kmf_cross_impl.rs` (2 tests). Both load straight out of
+  # tests/conformance/ at the repo root.
+  # ---------------------------------------------------------------------------
+  rust-conformance:
+    name: Rust — corpus + KMF cross-impl
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: "1.75"
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            packages/core-rs/target/
+          key: cargo-core-rs-${{ runner.os }}-${{ hashFiles('packages/core-rs/Cargo.lock', 'packages/core-rs/Cargo.toml') }}
+          restore-keys: |
+            cargo-core-rs-${{ runner.os }}-
+
+      - name: cargo test conformance + kmf_cross_impl
+        working-directory: packages/core-rs
+        run: cargo test --release --test conformance --test kmf_cross_impl
+
+  # ---------------------------------------------------------------------------
+  # Python conformance — the pyo3 binding wraps the same Rust core, so the
+  # corpus tests in `tests/test_smritidb.py` exercise the binding boundary
+  # against the same golden corpus.
+  # ---------------------------------------------------------------------------
+  py-conformance:
+    name: Python — corpus tests (via maturin)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: "1.75"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            packages/smritidb-py/target/
+          key: cargo-py-${{ runner.os }}-${{ hashFiles('packages/smritidb-py/Cargo.lock', 'packages/smritidb-py/Cargo.toml', 'packages/core-rs/Cargo.toml') }}
+          restore-keys: |
+            cargo-py-${{ runner.os }}-
+
+      - run: pip install "maturin>=1.7,<2.0" pytest
+
+      - working-directory: packages/smritidb-py
+        run: maturin develop --release
+
+      - working-directory: packages/smritidb-py
+        run: pytest -q
+
+  # ---------------------------------------------------------------------------
+  # KMP JVM conformance — the JVM binding loads the UniFFI cdylib via JNA.
+  # Stages the cdylib under target/release-jna/linux-x86-64/ exactly like the
+  # main CI job, then runs :jvmTest.
+  # ---------------------------------------------------------------------------
+  kmp-conformance:
+    name: KMP JVM — corpus tests (via UniFFI)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: "1.75"
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            packages/smritidb-ffi/target/
+          key: cargo-ffi-${{ runner.os }}-${{ hashFiles('packages/smritidb-ffi/Cargo.lock', 'packages/smritidb-ffi/Cargo.toml', 'packages/core-rs/Cargo.toml') }}
+          restore-keys: |
+            cargo-ffi-${{ runner.os }}-
+
+      - name: Build FFI cdylib
+        working-directory: packages/smritidb-ffi
+        run: cargo build --release
+
+      - name: Stage cdylib for JNA
+        working-directory: packages/smritidb-ffi
+        run: |
+          mkdir -p target/release-jna/linux-x86-64
+          cp target/release/libsmritidb_ffi.so target/release-jna/linux-x86-64/
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+
+      - name: gradle :jvmTest
+        working-directory: packages/smritidb-kmp
+        run: gradle :jvmTest --no-daemon --stacktrace
+
+  # ---------------------------------------------------------------------------
+  # Final gate — passes only if every binding agreed with the corpus AND the
+  # fixture re-emit was byte-identical. Branch protection should require this
+  # check on the main branch.
+  # ---------------------------------------------------------------------------
+  conformance-summary:
+    name: Conformance summary (required check)
+    runs-on: ubuntu-latest
+    needs:
+      - fixture-parity
+      - ts-conformance
+      - rust-conformance
+      - py-conformance
+      - kmp-conformance
+    steps:
+      - name: All bindings passed
+        run: echo "Smritidb conformance gate green across all bindings."

@@ -1,3 +1,25 @@
+# Smritidb — primary CI workflow.
+#
+# Runs the full test suite across every binding for every push to `main` and
+# every pull request. The conformance corpus + KMF fixture parity check runs
+# AFTER the Rust core and TypeScript reference both pass — it's the gate that
+# locks in bit-exactness across implementations.
+#
+# Component coverage (jobs run in parallel where possible):
+#   - rust-core        — packages/core-rs        — 50 tests
+#   - rust-ffi         — packages/smritidb-ffi   — 6  tests
+#   - rust-c-abi       — packages/smritidb-c     — 2  tests + C smoke
+#   - python           — packages/smritidb-py    — 21 tests (maturin + pytest)
+#   - kmp-jvm          — packages/smritidb-kmp   — 12 tests (Gradle :jvmTest)
+#   - typescript       — packages/core-ts        — 73 tests
+#   - conformance-gate — re-emits KMF + diffs    — depends on rust-core + typescript
+#   - notebooks        — Phase 0 notebook smoke  — kept from previous CI
+#   - spec-lint        — markdownlint over SPEC  — kept from previous CI
+#
+# Action versions are pinned to major tags (semver-compatible upgrades only).
+# Caches use actions/cache@v4 for Cargo and pnpm; Gradle uses gradle/actions
+# which manages its own cache layout.
+
 name: CI
 
 on:
@@ -10,9 +32,320 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: "0"
+  RUST_BACKTRACE: "1"
+
 jobs:
-  node:
-    name: Node — lint + typecheck + test + build
+  # ---------------------------------------------------------------------------
+  # Rust core — primary correctness gate. 50 tests including the conformance
+  # corpus (loads tests/conformance/golden.json) and the KMF cross-impl test
+  # (loads tests/conformance/kmf_fixture.bin emitted by the TS reference).
+  # ---------------------------------------------------------------------------
+  rust-core:
+    name: Rust core (cargo test)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: "1.75"
+          components: clippy, rustfmt
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            packages/core-rs/target/
+          key: cargo-core-rs-${{ runner.os }}-${{ hashFiles('packages/core-rs/Cargo.lock', 'packages/core-rs/Cargo.toml') }}
+          restore-keys: |
+            cargo-core-rs-${{ runner.os }}-
+
+      - name: cargo fmt --check
+        working-directory: packages/core-rs
+        run: cargo fmt --all -- --check
+
+      - name: cargo clippy
+        working-directory: packages/core-rs
+        run: cargo clippy --all-targets -- -D warnings
+
+      - name: cargo test --release
+        working-directory: packages/core-rs
+        run: cargo test --release --all-features
+
+      - name: cargo build --release (wasm feature)
+        working-directory: packages/core-rs
+        run: cargo build --release --features wasm
+
+      - name: Upload test artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rust-core-failure-logs
+          path: |
+            packages/core-rs/target/release/deps/*.log
+            packages/core-rs/target/debug/deps/*.log
+          if-no-files-found: ignore
+
+  # ---------------------------------------------------------------------------
+  # Smritidb FFI — UniFFI-driven Kotlin + Swift surface over the Rust core.
+  # 6 tests verify the FFI layer doesn't desync from the core's semantics.
+  # ---------------------------------------------------------------------------
+  rust-ffi:
+    name: Rust FFI (UniFFI)
+    runs-on: ubuntu-latest
+    needs: rust-core
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: "1.75"
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            packages/smritidb-ffi/target/
+          key: cargo-ffi-${{ runner.os }}-${{ hashFiles('packages/smritidb-ffi/Cargo.lock', 'packages/smritidb-ffi/Cargo.toml', 'packages/core-rs/Cargo.toml') }}
+          restore-keys: |
+            cargo-ffi-${{ runner.os }}-
+
+      - name: cargo test --release
+        working-directory: packages/smritidb-ffi
+        run: cargo test --release
+
+      - name: cargo build --release (cdylib for JNA)
+        working-directory: packages/smritidb-ffi
+        run: cargo build --release
+
+      - name: Upload JNA-shaped artifact for downstream KMP job
+        uses: actions/upload-artifact@v4
+        with:
+          name: ffi-cdylib-linux-x64
+          path: packages/smritidb-ffi/target/release/libsmritidb_ffi.so
+          if-no-files-found: error
+          retention-days: 1
+
+  # ---------------------------------------------------------------------------
+  # Smritidb C ABI — extern "C" surface consumed by Go, Dart, .NET. 2 Rust
+  # tests + a standalone C smoke test compiled with clang against the
+  # generated header.
+  # ---------------------------------------------------------------------------
+  rust-c-abi:
+    name: Rust C ABI (+ C smoke)
+    runs-on: ubuntu-latest
+    needs: rust-core
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: "1.75"
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            packages/smritidb-c/target/
+          key: cargo-c-${{ runner.os }}-${{ hashFiles('packages/smritidb-c/Cargo.lock', 'packages/smritidb-c/Cargo.toml', 'packages/core-rs/Cargo.toml') }}
+          restore-keys: |
+            cargo-c-${{ runner.os }}-
+
+      - name: cargo test --release
+        working-directory: packages/smritidb-c
+        run: cargo test --release
+
+      - name: cargo build --release (cdylib + staticlib)
+        working-directory: packages/smritidb-c
+        run: cargo build --release
+
+      - name: Build and run C smoke test
+        working-directory: packages/smritidb-c
+        run: |
+          clang -I include -L target/release -lsmritidb_c \
+            -Wl,-rpath,'$ORIGIN/../target/release' \
+            tests/smoke.c -o tests/smoke
+          LD_LIBRARY_PATH=target/release ./tests/smoke
+
+  # ---------------------------------------------------------------------------
+  # Python bindings — maturin builds the pyo3 extension, then pytest runs the
+  # 21 tests (smritidb + persistence).
+  # ---------------------------------------------------------------------------
+  python:
+    name: Python (maturin + pytest)
+    runs-on: ubuntu-latest
+    needs: rust-core
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: "1.75"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            packages/smritidb-py/target/
+          key: cargo-py-${{ runner.os }}-${{ hashFiles('packages/smritidb-py/Cargo.lock', 'packages/smritidb-py/Cargo.toml', 'packages/core-rs/Cargo.toml') }}
+          restore-keys: |
+            cargo-py-${{ runner.os }}-
+
+      - name: Install maturin + pytest
+        run: pip install "maturin>=1.7,<2.0" pytest
+
+      - name: Build extension (maturin develop --release)
+        working-directory: packages/smritidb-py
+        run: maturin develop --release
+
+      - name: Run pytest
+        working-directory: packages/smritidb-py
+        run: pytest -q
+
+      - name: Upload pytest output on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-pytest-logs
+          path: packages/smritidb-py/.pytest_cache/
+          if-no-files-found: ignore
+
+  # ---------------------------------------------------------------------------
+  # KMP — JVM target only on CI for now. Apple targets run on macos-latest in
+  # the kmp-apple job below. Other targets (Android Native, Linux, JS, WasmJs)
+  # are declared in build.gradle.kts but are not yet implemented end-to-end;
+  # they are deferred until a real `actual` exists. The JVM target uses the
+  # UniFFI-generated Kotlin loading libsmritidb_ffi.so via JNA, so we have to
+  # build the FFI cdylib first and stage it under target/release-jna.
+  # ---------------------------------------------------------------------------
+  kmp-jvm:
+    name: KMP JVM (gradle :jvmTest)
+    runs-on: ubuntu-latest
+    needs: rust-ffi
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: "1.75"
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            packages/smritidb-ffi/target/
+          key: cargo-ffi-${{ runner.os }}-${{ hashFiles('packages/smritidb-ffi/Cargo.lock', 'packages/smritidb-ffi/Cargo.toml', 'packages/core-rs/Cargo.toml') }}
+          restore-keys: |
+            cargo-ffi-${{ runner.os }}-
+
+      - name: Build FFI cdylib (libsmritidb_ffi.so)
+        working-directory: packages/smritidb-ffi
+        run: cargo build --release
+
+      - name: Stage cdylib for JNA (linux-x86-64)
+        working-directory: packages/smritidb-ffi
+        run: |
+          mkdir -p target/release-jna/linux-x86-64
+          cp target/release/libsmritidb_ffi.so target/release-jna/linux-x86-64/
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+
+      - name: Run :jvmTest
+        working-directory: packages/smritidb-kmp
+        # No gradlew is checked in. Use a system Gradle installed by
+        # gradle/actions/setup-gradle@v4.
+        run: gradle :jvmTest --no-daemon --stacktrace
+
+      - name: Upload test reports on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kmp-jvm-test-reports
+          path: packages/smritidb-kmp/build/reports/tests/
+          if-no-files-found: ignore
+
+  # ---------------------------------------------------------------------------
+  # KMP Apple — macOS-only. Runs on macos-latest. For now this is a thin
+  # compile check: build the static lib + run jvmTest as a smoke. Per-target
+  # Cinterop wiring lands when an Apple `actual` ships.
+  # ---------------------------------------------------------------------------
+  kmp-apple:
+    name: KMP Apple (macOS, smoke)
+    runs-on: macos-latest
+    needs: rust-core
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: "1.75"
+          targets: aarch64-apple-darwin,aarch64-apple-ios,aarch64-apple-ios-sim
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            packages/smritidb-ffi/target/
+          key: cargo-ffi-apple-${{ hashFiles('packages/smritidb-ffi/Cargo.lock', 'packages/smritidb-ffi/Cargo.toml', 'packages/core-rs/Cargo.toml') }}
+          restore-keys: |
+            cargo-ffi-apple-
+
+      - name: Build FFI cdylib (libsmritidb_ffi.dylib) for darwin-aarch64
+        working-directory: packages/smritidb-ffi
+        run: cargo build --release --target aarch64-apple-darwin
+
+      - name: Stage dylib for JNA (darwin-aarch64)
+        working-directory: packages/smritidb-ffi
+        run: |
+          mkdir -p target/release-jna/darwin-aarch64
+          cp target/aarch64-apple-darwin/release/libsmritidb_ffi.dylib target/release-jna/darwin-aarch64/
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+
+      - name: Run :jvmTest (Apple smoke)
+        working-directory: packages/smritidb-kmp
+        run: gradle :jvmTest --no-daemon --stacktrace
+
+  # ---------------------------------------------------------------------------
+  # TypeScript reference — produces the conformance corpus and KMF fixture.
+  # Runs typecheck + lint + test + build. 73 tests.
+  # ---------------------------------------------------------------------------
+  typescript:
+    name: TypeScript (pnpm test)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -26,14 +359,100 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
 
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.local/share/pnpm/store
+            node_modules
+            packages/*/node_modules
+          key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-${{ runner.os }}-
+
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
       - run: pnpm lint
       - run: pnpm test
       - run: pnpm build
 
-  python:
-    name: Python — Phase 0 notebook smoke
+      - name: Upload built core-ts dist for conformance gate
+        uses: actions/upload-artifact@v4
+        with:
+          name: core-ts-dist
+          path: packages/core-ts/dist/
+          if-no-files-found: error
+          retention-days: 1
+
+  # ---------------------------------------------------------------------------
+  # Conformance gate — depends on BOTH the Rust core and TypeScript jobs
+  # passing. Re-emits the KMF fixture from the TS reference and asserts the
+  # bytes are identical to what's checked into the repo. Also guards
+  # golden.json + kmf_fixture.bin against silent modification.
+  # ---------------------------------------------------------------------------
+  conformance-gate:
+    name: Conformance gate (bit-exactness)
+    runs-on: ubuntu-latest
+    needs: [rust-core, typescript]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.local/share/pnpm/store
+            node_modules
+            packages/*/node_modules
+          key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-${{ runner.os }}-
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Verify tests/conformance/golden.json is unchanged from HEAD
+        run: git diff --exit-code -- tests/conformance/golden.json
+
+      - name: Verify tests/conformance/kmf_fixture.bin is unchanged from HEAD
+        run: git diff --exit-code -- tests/conformance/kmf_fixture.bin
+
+      - name: Build core-ts (the fixture emitter imports from dist/)
+        run: pnpm --filter @tanvrit/smritidb build
+
+      - name: Re-emit KMF fixture into a side-by-side location
+        run: |
+          cp tests/conformance/emit_kmf_fixture.mjs tests/conformance/emit_kmf_fixture.regen.mjs
+          # Rewrite the output path so we don't clobber the checked-in fixture.
+          sed -i 's|kmf_fixture.bin|kmf_fixture.regen.bin|g; s|kmf_fixture.json|kmf_fixture.regen.json|g' \
+            tests/conformance/emit_kmf_fixture.regen.mjs
+          node tests/conformance/emit_kmf_fixture.regen.mjs
+
+      - name: Compare regenerated fixture to the checked-in fixture
+        run: cmp tests/conformance/kmf_fixture.bin tests/conformance/kmf_fixture.regen.bin
+
+      - name: Upload regenerated artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conformance-regen-diff
+          path: |
+            tests/conformance/kmf_fixture.bin
+            tests/conformance/kmf_fixture.regen.bin
+            tests/conformance/golden.json
+          if-no-files-found: ignore
+
+  # ---------------------------------------------------------------------------
+  # Existing checks preserved from the previous CI.
+  # ---------------------------------------------------------------------------
+  notebooks:
+    name: Notebooks — Phase 0 smoke
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

@@ -1,0 +1,203 @@
+# Smritidb — release artifact build (scaffold).
+#
+# Triggered on tag pushes matching `v*` (e.g. v0.1.0, v0.2.0-rc1). Builds
+# distributable artifacts for every binding and uploads them to the GitHub
+# Release. Publish-to-registry steps (PyPI, npm, Maven Central, NuGet) are
+# intentionally NOT included — those require secrets that are not yet set up
+# on this repo. Add them in a follow-up once the publish identities exist.
+#
+# Deferred / not yet wired:
+#   - Apple iOS xcframework packaging (needs cinterop-driven build).
+#   - Windows runner for rusqlite + JNA (historical pitfalls; see CI.md).
+#   - Signed Maven Central upload (needs GPG key + Sonatype credentials).
+#   - NuGet pack for smritidb-dotnet (binding ships in a future phase).
+
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: "0"
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Python wheels — manylinux + macOS (arm64 + x86_64) + Windows abi3 wheel.
+  # Uses maturin-action which knows how to set up zig + the right manylinux
+  # image. Output wheels land in dist/ as artifacts.
+  # ---------------------------------------------------------------------------
+  python-wheels:
+    name: Python wheels (${{ matrix.os }} / ${{ matrix.target }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            manylinux: auto
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-gnu
+            manylinux: auto
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            manylinux: auto
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            manylinux: auto
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            manylinux: auto
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - uses: PyO3/maturin-action@v1
+        with:
+          working-directory: packages/smritidb-py
+          target: ${{ matrix.target }}
+          manylinux: ${{ matrix.manylinux }}
+          args: --release --strip --out dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: smritidb-py-${{ matrix.target }}
+          path: packages/smritidb-py/dist/*.whl
+          if-no-files-found: error
+
+  # ---------------------------------------------------------------------------
+  # TypeScript npm package — runs pnpm build and packs a tarball. The actual
+  # `npm publish` is left commented; un-comment once the NPM_TOKEN secret is
+  # provisioned.
+  # ---------------------------------------------------------------------------
+  npm-package:
+    name: TypeScript npm tarball
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          registry-url: "https://registry.npmjs.org"
+
+      - run: pnpm install --frozen-lockfile
+
+      - working-directory: packages/core-ts
+        run: pnpm build
+
+      - name: Pack tarball
+        working-directory: packages/core-ts
+        run: pnpm pack --out smritidb-%v.tgz
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: smritidb-npm-tarball
+          path: packages/core-ts/smritidb-*.tgz
+          if-no-files-found: error
+
+      # Publish (deferred — needs NPM_TOKEN secret).
+      # - name: npm publish
+      #   working-directory: packages/core-ts
+      #   env:
+      #     NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      #   run: npm publish --access public --provenance
+
+  # ---------------------------------------------------------------------------
+  # KMP — JVM Maven publication. Builds and stages a Maven repo layout under
+  # build/repo via `publishAllPublicationsToMavenLocal`. Real signed upload to
+  # Maven Central is deferred (needs GPG + Sonatype credentials).
+  # ---------------------------------------------------------------------------
+  kmp-jvm:
+    name: KMP JVM Maven publication
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: "1.75"
+
+      - name: Build FFI cdylib
+        working-directory: packages/smritidb-ffi
+        run: cargo build --release
+
+      - name: Stage cdylib for JNA
+        working-directory: packages/smritidb-ffi
+        run: |
+          mkdir -p target/release-jna/linux-x86-64
+          cp target/release/libsmritidb_ffi.so target/release-jna/linux-x86-64/
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Publish to mavenLocal
+        working-directory: packages/smritidb-kmp
+        run: gradle publishJvmPublicationToMavenLocal --no-daemon --stacktrace
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: smritidb-kmp-maven-local
+          path: ~/.m2/repository/com/tanvrit/
+          if-no-files-found: error
+
+  # ---------------------------------------------------------------------------
+  # .NET NuGet — scaffold only. The smritidb-dotnet binding is not yet ready
+  # for distribution; this job exists so the structure is in place when it is.
+  # ---------------------------------------------------------------------------
+  dotnet-nuget:
+    name: .NET NuGet (scaffold; skipped)
+    runs-on: ubuntu-latest
+    if: false # Flip to true once packages/smritidb-dotnet has a real csproj.
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0"
+      - working-directory: packages/smritidb-dotnet
+        run: dotnet pack -c Release -o nupkgs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: smritidb-dotnet-nupkg
+          path: packages/smritidb-dotnet/nupkgs/*.nupkg
+          if-no-files-found: error
+
+  # ---------------------------------------------------------------------------
+  # GitHub Release — collects every artifact and attaches it to the release
+  # the tag points at. Does NOT push to any external registry.
+  # ---------------------------------------------------------------------------
+  github-release:
+    name: Attach artifacts to GitHub Release
+    runs-on: ubuntu-latest
+    needs: [python-wheels, npm-package, kmp-jvm]
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/**/*.whl
+            artifacts/**/*.tgz
+          generate_release_notes: true
