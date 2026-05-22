@@ -51,7 +51,12 @@ pub fn encode_bag_of_words(text: &str, dim: usize, opts: TextEncodingOptions) ->
 }
 
 /// Word n-gram encoder. n >= 2 preserves order via `permute`.
-pub fn encode_word_ngrams(text: &str, dim: usize, n: usize, opts: TextEncodingOptions) -> Hypervector {
+pub fn encode_word_ngrams(
+    text: &str,
+    dim: usize,
+    n: usize,
+    opts: TextEncodingOptions,
+) -> Hypervector {
     assert!(n >= 1, "encode_word_ngrams: n must be >= 1");
     let words = normalise_words(text, opts);
     if words.is_empty() {
@@ -68,7 +73,10 @@ pub fn encode_word_ngrams(text: &str, dim: usize, n: usize, opts: TextEncodingOp
     for i in 0..=words.len() - n {
         let mut acc = encode_string(&format!("word:{}", words[i]), dim);
         for j in 1..n {
-            let term = permute(&encode_string(&format!("word:{}", words[i + j]), dim), j as i32);
+            let term = permute(
+                &encode_string(&format!("word:{}", words[i + j]), dim),
+                j as i32,
+            );
             for k in 0..acc.len() {
                 acc[k] ^= term[k];
             }
@@ -82,7 +90,11 @@ pub fn encode_word_ngrams(text: &str, dim: usize, n: usize, opts: TextEncodingOp
 /// Character n-gram encoder ("shingles"). Typo-tolerant. Default n=3.
 pub fn encode_char_ngrams(text: &str, dim: usize, n: usize, lowercase: bool) -> Hypervector {
     assert!(n >= 1, "encode_char_ngrams: n must be >= 1");
-    let cleaned: String = if lowercase { text.to_lowercase() } else { text.to_string() };
+    let cleaned: String = if lowercase {
+        text.to_lowercase()
+    } else {
+        text.to_string()
+    };
     let chars: Vec<char> = cleaned.chars().collect();
     if chars.len() < n {
         return encode_string(text, dim);

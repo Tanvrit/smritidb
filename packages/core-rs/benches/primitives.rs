@@ -24,7 +24,9 @@ fn bench_bind(c: &mut Criterion) {
 }
 
 fn bench_bundle(c: &mut Criterion) {
-    let xs: Vec<_> = (0..7).map(|i| random_hv(format!("x{i}").as_bytes(), 10000)).collect();
+    let xs: Vec<_> = (0..7)
+        .map(|i| random_hv(format!("x{i}").as_bytes(), 10000))
+        .collect();
     let refs: Vec<&Vec<u8>> = xs.iter().collect();
     c.bench_function("bundle n=7 D=10000", |b| {
         b.iter(|| bundle(black_box(&refs)));

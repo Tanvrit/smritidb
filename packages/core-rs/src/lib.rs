@@ -18,8 +18,12 @@
 
 #![warn(missing_debug_implementations, rust_2018_idioms)]
 
+pub mod consolidate;
 pub mod encode;
 pub mod hypervector;
+pub mod kmf;
+pub mod persist;
+pub mod store;
 pub mod text;
 
 #[cfg(feature = "wasm")]
@@ -27,8 +31,17 @@ pub mod wasm;
 
 pub const SPEC_VERSION: &str = "0.1.0-draft";
 
+pub use consolidate::{
+    flag_cold_items, pull_closer, CoactivationTracker, ColdCandidate, ConsolidationConfig,
+    ConsolidationReport,
+};
 pub use encode::{encode_embedding, encode_string};
-pub use hypervector::{bind, bundle, permute, random_hv, similarity, Hypervector};
+pub use hypervector::{bind, bundle, permute, random_hv, similarity, unbind, Hypervector};
+pub use kmf::{read_kmf, write_kmf, KmfError, KmfItem, KmfSnapshot, KMF_SPEC_VERSION};
+pub use persist::{PersistenceAdapter, PersistenceError};
+pub use store::{
+    open_persistent_store, persist_store, Item, Match, Store, StoreConfig, StoreError,
+};
 pub use text::{encode_bag_of_words, encode_char_ngrams, encode_word_ngrams, TextEncodingOptions};
 
 #[cfg(test)]
@@ -78,7 +91,10 @@ mod tests {
         let bundled = bundle(&refs);
         for x in &xs {
             let s = similarity(&bundled, x);
-            assert!(s > 0.6, "expected bundle similarity > 0.6 to component, got {s}");
+            assert!(
+                s > 0.6,
+                "expected bundle similarity > 0.6 to component, got {s}"
+            );
         }
     }
 

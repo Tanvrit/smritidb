@@ -102,7 +102,13 @@ fn conformance_random_hv() {
     let g = load_golden();
     for r in &g.random_hv {
         let hv = random_hv(r.seed_utf8.as_bytes(), r.dim);
-        assert_eq!(hex_sha256(&hv), r.sha256, "randomHv({:?}, {})", r.seed_utf8, r.dim);
+        assert_eq!(
+            hex_sha256(&hv),
+            r.sha256,
+            "randomHv({:?}, {})",
+            r.seed_utf8,
+            r.dim
+        );
     }
 }
 
@@ -111,7 +117,13 @@ fn conformance_encode_string() {
     let g = load_golden();
     for r in &g.encode_string {
         let hv = encode_string(&r.input, r.dim);
-        assert_eq!(hex_sha256(&hv), r.sha256, "encodeString({:?}, {})", r.input, r.dim);
+        assert_eq!(
+            hex_sha256(&hv),
+            r.sha256,
+            "encodeString({:?}, {})",
+            r.input,
+            r.dim
+        );
     }
 }
 
@@ -154,7 +166,11 @@ fn conformance_bind_round_trip() {
 fn conformance_bundle() {
     let g = load_golden();
     for r in &g.bundle {
-        let hvs: Vec<_> = r.seeds.iter().map(|s| random_hv(s.as_bytes(), r.dim)).collect();
+        let hvs: Vec<_> = r
+            .seeds
+            .iter()
+            .map(|s| random_hv(s.as_bytes(), r.dim))
+            .collect();
         let refs: Vec<&Vec<u8>> = hvs.iter().collect();
         let out = bundle(&refs);
         assert_eq!(hex_sha256(&out), r.sha256, "bundle({:?})", r.seeds);
