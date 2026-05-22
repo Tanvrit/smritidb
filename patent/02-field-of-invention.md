@@ -1,0 +1,3 @@
+# Field of the Invention
+
+The present invention relates to the field of computer-implemented associative memory systems based on hyperdimensional computing (HDC); and more particularly to systems and methods for storing, retrieving, persisting, and consolidating high-dimensional binary vectors with verifiable bit-exact reproducibility across heterogeneous language implementations and hardware platforms, including a deterministic majority-vote tiebreaker, a replayable consolidation procedure, an open wire format with per-block cryptographic integrity, a thermometer-quantised random-projection encoder for bounded floating-point inputs, a training-free permutation-based text encoder, and an associated conformance verification methodology.

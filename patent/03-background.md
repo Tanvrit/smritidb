@@ -1,0 +1,43 @@
+# Background of the Invention
+
+## 1. The General Problem
+
+Associative memory is a long-standing problem in computer science: given a noisy or partial cue, a system must retrieve the stored datum that is most similar to that cue, where similarity is defined with respect to a content-addressable space rather than a syntactic key. Modern software systems address this problem predominantly through so-called "vector databases" which store dense floating-point embedding vectors, typically of 768 to 4096 dimensions in 32-bit precision, produced by a neural embedding model, and answer similarity queries by computing cosine or Euclidean distance between the cue embedding and every stored embedding (or an approximation thereof produced by an approximate-nearest-neighbour (ANN) index). Commercial offerings in this space include the Pinecone managed service, the Qdrant open-source database, the Weaviate open-source database, the Milvus open-source database, and the FAISS library originally published by Facebook AI Research. These systems collectively form the prior art against which the present invention is to be assessed.
+
+## 2. Specific Technical Problems with the Prior Art
+
+The said prior-art systems, taken individually or in combination, suffer from a number of specific technical problems which the present invention is directed to solving:
+
+### 2.1 Cross-implementation drift
+
+Floating-point arithmetic on contemporary processors is, in practice, non-associative: the order in which a sum is computed affects the low-order bits of the result, and the same model executed on different SIMD widths (for example AVX-512 versus NEON), on different compilers, or on different language runtimes (for example a JavaScript V8 engine versus a Rust LLVM build) will, in general, produce different floating-point similarity scores for the same input vectors. This drift propagates into ANN index construction (where it changes which neighbours are visited and in which order) and ultimately into the returned top-k list. The consequence is that two clients of the same vector database, written in different languages but querying the same dataset, can and do receive different answers to identical queries. None of the said prior-art systems is contractually obligated to produce byte-identical results across implementations, nor do they expose a means by which a third party may verify such identity.
+
+### 2.2 High memory footprint of f32 embeddings
+
+A 1024-dimensional 32-bit floating-point embedding occupies 4096 bytes (approximately 4 KB) per vector; at the more common 768 dimensions it occupies 3072 bytes. Stored at scale, this footprint dominates both random-access memory consumption during recall and storage I/O bandwidth during snapshot and restore operations. Compression schemes such as product quantisation reduce the footprint but introduce a further source of cross-implementation non-determinism, since the centroid assignment is a function of training data and floating-point arithmetic, neither of which is reproducible across implementations.
+
+### 2.3 Stochastic and non-replayable consolidation
+
+Modern ANN indices such as HNSW (Hierarchical Navigable Small World graphs) and IVF-PQ (Inverted File with Product Quantisation) are constructed using procedures that depend on a pseudo-random number generator, the seed for which is not, in general, exposed by the database. The result is that an index rebuilt from the same input data on the same machine may have a different topology, and consequently different recall behaviour, on each run. There exists no facility for an operator to replay a consolidation step from a snapshot and an access log and to verify that the resulting state is identical to a reference. This deficiency makes audit, compliance, and reproducible scientific use of vector databases unnecessarily difficult.
+
+### 2.4 Lack of cryptographic integrity in storage substrates
+
+The on-disk formats employed by the said prior-art systems are, in the main, optimised for write throughput and reader simplicity. They do not, in general, provide cryptographic integrity for each block of the substrate; a single-bit corruption on the underlying storage medium will either propagate silently into retrieved results or, at best, be detected only by a coarse-grained checksum applied to the entire file. The present invention, by contrast, requires that every block of the on-disk substrate carry a per-block cryptographic digest such that any corruption is detectable and localisable.
+
+### 2.5 Lack of an open, vendor-neutral wire format
+
+Each of the said prior-art systems employs a proprietary or implementation-defined on-disk format. There exists no analogue, in the vector-database domain, of the Apache Parquet format which has standardised columnar analytical storage, nor of the Apache Iceberg table format which has standardised transactional table semantics over object stores. A user wishing to migrate from one vector database to another must, at present, undertake a bespoke export-and-reimport exercise; a user wishing to operate a federation of heterogeneous engines over a shared corpus has no portable substrate at all.
+
+## 3. Treatment of Specific Prior Art
+
+The applicant respectfully notes that the foundational hyperdimensional-computing literature, including without limitation Kanerva's "Sparse Distributed Memory" (1988) and "Hyperdimensional Computing: An Introduction to Computing in Distributed Representation with High-Dimensional Random Vectors" (2009), addresses the mathematical substrate of binary hypervectors and their core operations of bundling, binding, and permutation; and that subsequent work, including Imani et al.'s "Voicehd: Hyperdimensional Computing for Efficient Speech Recognition" (2017) and related contributions, addresses the application of hyperdimensional computing to specific classification problems. None of the said references, individually or in combination, discloses (i) a deterministic tiebreaker that yields byte-identical bundle outputs across heterogeneous language implementations on heterogeneous hardware, (ii) a replayable Hebbian consolidation procedure with a bounded per-pass similarity drift, (iii) an open wire format with per-block BLAKE3 integrity and magic trailer, (iv) a thermometer-quantised random-projection encoder for bounded floating-point inputs whose bit output is reproducible across implementations, (v) a training-free permutation-positional text encoder whose bit output is reproducible across implementations, or (vi) a conformance corpus methodology that verifies byte-identical computation across heterogeneous bindings. The said references, taken together, establish the mathematical substrate upon which the present invention is built; they do not, alone or in combination, render obvious the specific combination of elements claimed herein.
+
+The applicant further notes that none of Pinecone, Qdrant, Weaviate, Milvus, or FAISS, taken individually or in any combination, uses a binary hyperdimensional substrate at all; each of the said systems operates upon real-valued floating-point embeddings and therefore necessarily inherits the cross-implementation drift problem described in §2.1 above.
+
+## 4. The Gap Left by the Prior Art
+
+No known system, prior to the present invention, combines (a) a binary hyperdimensional substrate, (b) verifiable cross-implementation bit-exactness anchored by a deterministic tiebreaker, (c) a replayable Hebbian consolidation procedure with bounded similarity drift, (d) an open wire format with per-block cryptographic integrity, (e) a thermometer-quantised random-projection encoder reproducible across implementations, (f) a training-free permutation-positional text encoder, and (g) a conformance verification methodology, in a single coherent end-to-end pipeline from input data through persistent storage.
+
+## 5. The Need for the Present Invention
+
+There is, accordingly, a long-felt and unmet need for a computer-implemented associative memory system that (i) achieves verifiable cross-hardware reproducibility, (ii) reduces memory footprint by approximately a factor of thirty-two compared to 32-bit floating-point embeddings, (iii) reduces computational load by replacing dot-product multiplications with single-cycle XOR and popcount operations amenable to SIMD acceleration, (iv) provides graceful holographic degradation under corruption, (v) reduces storage I/O bandwidth by approximately a factor of thirty-two through packed bit representation, and (vi) provides verifiable per-block storage integrity. The present invention is directed to providing such a system.
