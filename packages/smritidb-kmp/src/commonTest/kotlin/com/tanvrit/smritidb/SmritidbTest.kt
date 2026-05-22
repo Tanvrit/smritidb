@@ -1,5 +1,6 @@
 package com.tanvrit.smritidb
 
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
@@ -7,6 +8,13 @@ import kotlin.test.assertTrue
 
 class SmritidbTest {
     private val dim: UInt = 8192u
+
+    @BeforeTest
+    fun setUp() {
+        // No-op on every target except Kotlin/Wasm, which lazy-loads
+        // the wasm-bindgen Node module on first use.
+        setUpSmritidbTestFixture()
+    }
 
     @Test
     fun similarity_self_equals_one() {

@@ -1,0 +1,88 @@
+{
+  "binding": "rust",
+  "version": "0.0.0",
+  "spec_version": "0.1.0-draft",
+  "host": {
+    "os": "macos",
+    "arch": "aarch64"
+  },
+  "primitives": {
+    "random_hv": {
+      "ops_per_sec": 125563.73407961719,
+      "iters": 1000,
+      "wall_seconds": 0.007964083
+    },
+    "bundle": {
+      "ops_per_sec": 2132.2700413393854,
+      "iters": 100,
+      "wall_seconds": 0.046898375
+    },
+    "bind": {
+      "ops_per_sec": 2047795.5480924784,
+      "iters": 100,
+      "wall_seconds": 0.000048833
+    },
+    "similarity": {
+      "ops_per_sec": 442255.2808044624,
+      "iters": 10000,
+      "wall_seconds": 0.022611375
+    },
+    "encode_string": {
+      "ops_per_sec": 123647.03100294743,
+      "iters": 10000,
+      "wall_seconds": 0.080875375
+    }
+  },
+  "recall": [
+    {
+      "n": 100,
+      "queries": 1000,
+      "p50_ms": 0.172834,
+      "p99_ms": 0.201084,
+      "p999_ms": 0.234792,
+      "insert_seconds": 0.0018105
+    },
+    {
+      "n": 1000,
+      "queries": 1000,
+      "p50_ms": 1.7038330000000002,
+      "p99_ms": 1.987334,
+      "p999_ms": 2.58025,
+      "insert_seconds": 0.01006825
+    },
+    {
+      "n": 10000,
+      "queries": 1000,
+      "p50_ms": 18.465584,
+      "p99_ms": 20.407041,
+      "p999_ms": 20.698207999999997,
+      "insert_seconds": 0.107492708
+    }
+  ],
+  "persistence": {
+    "snapshot_write": {
+      "n": 10000,
+      "bytes": 14188544,
+      "wall_seconds": 0.4191055,
+      "mb_per_sec": 33.854349322545275
+    },
+    "snapshot_read": {
+      "n": 10000,
+      "bytes": 14188544,
+      "wall_seconds": 0.100322125,
+      "mb_per_sec": 141.4298590664821
+    },
+    "wal_append": {
+      "n": 1000,
+      "wall_seconds": 0.055441416,
+      "ops_per_sec": 18037.057350771847
+    }
+  },
+  "memory": {
+    "n_items": 10000,
+    "rss_before_bytes": 523534336,
+    "rss_after_bytes": 523534336,
+    "bytes_per_item": 0.0,
+    "theoretical_floor_bytes_per_item": 1250
+  }
+}

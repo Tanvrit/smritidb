@@ -1,0 +1,93 @@
+{
+  "binding": "python",
+  "version": "0.1.0",
+  "spec_version": "0.1.0-draft",
+  "host": {
+    "os": "darwin",
+    "arch": "arm64"
+  },
+  "primitives": {
+    "random_hv": {
+      "ops_per_sec": 129873.6531704789,
+      "iters": 1000,
+      "wall_seconds": 0.007699791109189391
+    },
+    "bundle": {
+      "ops_per_sec": 1528.7481121641242,
+      "iters": 100,
+      "wall_seconds": 0.0654129998292774
+    },
+    "bind": {
+      "ops_per_sec": 1509431.7520787793,
+      "iters": 100,
+      "wall_seconds": 6.625009700655937e-05
+    },
+    "similarity": {
+      "ops_per_sec": 499278.12157190504,
+      "iters": 10000,
+      "wall_seconds": 0.02002891688607633
+    },
+    "encode_string": {
+      "ops_per_sec": 122535.81687147198,
+      "iters": 10000,
+      "wall_seconds": 0.08160879206843674
+    }
+  },
+  "recall": [
+    {
+      "n": 100,
+      "queries": 1000,
+      "p50_ms": 0.16383291222155094,
+      "p99_ms": 0.19179191440343857,
+      "p999_ms": 0.21045911125838757,
+      "insert_seconds": 0.0010525418911129236,
+      "mean_ms": 0.16682223184034228
+    },
+    {
+      "n": 1000,
+      "queries": 1000,
+      "p50_ms": 1.6656250227242708,
+      "p99_ms": 1.9767500925809145,
+      "p999_ms": 2.1300839725881815,
+      "insert_seconds": 0.009708916069939733,
+      "mean_ms": 1.6817756125237793
+    },
+    {
+      "n": 10000,
+      "queries": 1000,
+      "p50_ms": 17.85187516361475,
+      "p99_ms": 20.086167147383094,
+      "p999_ms": 20.73558303527534,
+      "insert_seconds": 0.09726800001226366,
+      "mean_ms": 18.130965106654912
+    }
+  ],
+  "persistence": {
+    "snapshot_write": {
+      "n": 10000,
+      "bytes": 14188544,
+      "wall_seconds": 0.4195089170243591,
+      "mb_per_sec": 33.82179358818285
+    },
+    "snapshot_read": {
+      "n": 10000,
+      "bytes": 14188544,
+      "wall_seconds": 0.10068570799194276,
+      "mb_per_sec": 140.91914615265375
+    },
+    "wal_append": {
+      "n": 1000,
+      "wall_seconds": 0.06985529093071818,
+      "ops_per_sec": 14315.307926951311,
+      "note": "Python binding has no direct append_wal; this measures repeated full persist() instead."
+    }
+  },
+  "memory": {
+    "n_items": 10000,
+    "rss_before_bytes": 548716544,
+    "rss_after_bytes": 548716544,
+    "bytes_per_item": 0.0,
+    "synthetic_floor_bytes_per_item": 10000.0,
+    "theoretical_floor_bytes_per_item": 1250
+  }
+}

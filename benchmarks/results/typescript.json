@@ -1,0 +1,89 @@
+{
+  "binding": "typescript",
+  "version": "0.1.0",
+  "spec_version": "0.1.0-draft",
+  "host": {
+    "os": "darwin",
+    "arch": "arm64"
+  },
+  "primitives": {
+    "random_hv": {
+      "ops_per_sec": 32763.25273573158,
+      "iters": 1000,
+      "wall_seconds": 0.03052200000000002
+    },
+    "bundle": {
+      "ops_per_sec": 138.04483426477313,
+      "iters": 100,
+      "wall_seconds": 0.724402333
+    },
+    "bind": {
+      "ops_per_sec": 64005.12040963381,
+      "iters": 100,
+      "wall_seconds": 0.0015623749999999746
+    },
+    "similarity": {
+      "ops_per_sec": 20555.94055119212,
+      "iters": 10000,
+      "wall_seconds": 0.48647737500000016
+    },
+    "encode_string": {
+      "ops_per_sec": 38785.64729209685,
+      "iters": 10000,
+      "wall_seconds": 0.25782733299999994
+    }
+  },
+  "recall": [
+    {
+      "n": 100,
+      "queries": 1000,
+      "p50_ms": 4.4059589999997115,
+      "p99_ms": 4.927834000000075,
+      "p999_ms": 4.997624999999971,
+      "insert_seconds": 0.004499708000000283
+    },
+    {
+      "n": 1000,
+      "queries": 1000,
+      "p50_ms": 44.3212080000003,
+      "p99_ms": 45.47450000000026,
+      "p999_ms": 45.94874999999956,
+      "insert_seconds": 0.030846292000000174
+    },
+    {
+      "n": 10000,
+      "queries": 1000,
+      "p50_ms": 444.6407080000499,
+      "p99_ms": 581.3294579999638,
+      "p999_ms": 683.5571250000066,
+      "insert_seconds": 0.3098953750000001
+    }
+  ],
+  "persistence": {
+    "snapshot_write": {
+      "n": 10000,
+      "bytes": 14188544,
+      "wall_seconds": 0.7024264579999726,
+      "mb_per_sec": 20.199330247894157
+    },
+    "snapshot_read": {
+      "n": 10000,
+      "bytes": 14188544,
+      "wall_seconds": 0.37270941599999785,
+      "mb_per_sec": 38.06864916984035
+    },
+    "wal_append": {
+      "n": 1000,
+      "wall_seconds": 0.07014175000000977,
+      "ops_per_sec": 14256.844176255378,
+      "note": "TS adapter exposes write/read; this measures repeated full persistStore() instead."
+    }
+  },
+  "memory": {
+    "n_items": 10000,
+    "rss_before_bytes": 6996312,
+    "rss_after_bytes": 14106752,
+    "bytes_per_item": 711.044,
+    "theoretical_floor_bytes_per_item": 1250
+  }
+}
