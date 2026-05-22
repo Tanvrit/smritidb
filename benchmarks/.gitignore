@@ -1,0 +1,22 @@
+# Cross-binding benchmark artifacts
+results/*.json
+
+# Rust
+rust/target/
+rust/Cargo.lock
+
+# Kotlin / Gradle
+kotlin/build/
+kotlin/.gradle/
+
+# TypeScript / Node
+typescript/node_modules/
+node_modules/
+
+# Python
+python/__pycache__/
+python/*.pyc
+
+# Editor
+.vscode/
+.idea/

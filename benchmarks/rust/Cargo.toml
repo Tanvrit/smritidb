@@ -1,0 +1,49 @@
+[package]
+name = "smritidb-benchmarks"
+version = "0.0.0"
+edition = "2021"
+publish = false
+description = "Cross-binding benchmark harness — Rust portion."
+
+# Standalone crate (not part of the workspace) so the workspace lockfile is
+# untouched. We pull `smritidb-core` via a relative path — the same crate the
+# other bindings consume.
+[workspace]
+
+[dependencies]
+smritidb-core = { path = "../../packages/core-rs", default-features = false, features = ["persist-sqlite"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tempfile = "3"
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[[bench]]
+name = "primitives"
+harness = false
+
+[[bench]]
+name = "persistence"
+harness = false
+
+[[bench]]
+name = "recall"
+harness = false
+
+# A `cargo run --release --bin smritidb-bench` entry point that emits
+# results/rust.json matching the cross-binding schema. This is what
+# `run-all.sh` invokes; criterion's HTML reports are auxiliary.
+[[bin]]
+name = "smritidb-bench"
+path = "src/main.rs"
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+
+[profile.bench]
+opt-level = 3
+lto = "fat"
+codegen-units = 1

@@ -1,0 +1,23 @@
+{
+  "name": "smritidb-benchmarks-ts",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Smritidb benchmark harness — TypeScript portion.",
+  "type": "module",
+  "scripts": {
+    "bench:primitives":   "node --import tsx bench-primitives.ts",
+    "bench:recall":       "node --import tsx bench-recall.ts",
+    "bench:persistence":  "node --import tsx bench-persistence.ts",
+    "bench:all":          "node --import tsx run-all.ts"
+  },
+  "dependencies": {
+    "@tanvrit/smritidb": "workspace:*",
+    "better-sqlite3": "^12.10.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^22.9.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}
