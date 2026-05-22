@@ -4,13 +4,13 @@
   "description": "TypeScript reference implementation of Smritidb binary HDC associative memory.",
   "author": "Tanvrit Private Limited <ervivek40@gmail.com>",
   "license": "Apache-2.0",
-  "homepage": "https://kanervalabs.com/smritidb",
+  "homepage": "https://tanvrit.com/smritidb",
   "bugs": {
-    "url": "https://github.com/kanervalabs/smritidb/issues"
+    "url": "https://github.com/Tanvrit/smritidb/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/kanervalabs/smritidb.git",
+    "url": "git+https://github.com/Tanvrit/smritidb.git",
     "directory": "packages/core-ts"
   },
   "type": "module",

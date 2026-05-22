@@ -39,4 +39,4 @@ All notable changes to Smritidb will be documented in this file. Format follows 
 - 234+ tests passing across the monorepo.
 - Zero third-party storage SDK dependencies — all persistence via libsqlite3 (rusqlite bundled).
 
-[0.1.0]: https://github.com/kanervalabs/smritidb/releases/tag/v0.1.0
+[0.1.0]: https://github.com/Tanvrit/smritidb/releases/tag/v0.1.0

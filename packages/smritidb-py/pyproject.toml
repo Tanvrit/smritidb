@@ -33,10 +33,10 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://kanervalabs.com/smritidb"
-Documentation = "https://docs.kanervalabs.com/smritidb/python"
-Repository = "https://github.com/kanervalabs/smritidb"
-Issues = "https://github.com/kanervalabs/smritidb/issues"
+Homepage = "https://tanvrit.com/smritidb"
+Documentation = "https://docs.tanvrit.com/smritidb/python"
+Repository = "https://github.com/Tanvrit/smritidb"
+Issues = "https://github.com/Tanvrit/smritidb/issues"
 
 [tool.maturin]
 python-source = "python"

@@ -359,7 +359,7 @@ publishing {
     repositories {
         maven {
             name = "GitHubPackages"
-            url = uri("https://maven.pkg.github.com/kanervalabs/smritidb")
+            url = uri("https://maven.pkg.github.com/Tanvrit/smritidb")
             credentials {
                 username = System.getenv("GITHUB_USERNAME") ?: project.findProperty("gpr.user") as String?
                 password = System.getenv("GITHUB_TOKEN") ?: project.findProperty("gpr.key") as String?
@@ -370,7 +370,7 @@ publishing {
         pom {
             name.set("Smritidb")
             description.set("Kotlin Multiplatform bindings for Smritidb binary HDC associative memory.")
-            url.set("https://kanervalabs.com/smritidb")
+            url.set("https://tanvrit.com/smritidb")
             licenses {
                 license {
                     name.set("Apache-2.0")
@@ -384,13 +384,13 @@ publishing {
                     name.set("Vivek Singh")
                     email.set("ervivek40@gmail.com")
                     organization.set("Tanvrit Private Limited")
-                    organizationUrl.set("https://kanervalabs.com")
+                    organizationUrl.set("https://tanvrit.com")
                 }
             }
             scm {
-                url.set("https://github.com/kanervalabs/smritidb")
-                connection.set("scm:git:git://github.com/kanervalabs/smritidb.git")
-                developerConnection.set("scm:git:ssh://github.com/kanervalabs/smritidb.git")
+                url.set("https://github.com/Tanvrit/smritidb")
+                connection.set("scm:git:git://github.com/Tanvrit/smritidb.git")
+                developerConnection.set("scm:git:ssh://github.com/Tanvrit/smritidb.git")
             }
         }
     }

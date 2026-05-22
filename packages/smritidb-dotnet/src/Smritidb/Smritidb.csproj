@@ -15,8 +15,8 @@
     <Company>Tanvrit Private Limited</Company>
     <Description>.NET binding for Smritidb binary HDC associative memory, via P/Invoke over libsmritidb_c.</Description>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
-    <PackageProjectUrl>https://kanervalabs.com/smritidb</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/kanervalabs/smritidb</RepositoryUrl>
+    <PackageProjectUrl>https://tanvrit.com/smritidb</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/Tanvrit/smritidb</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageTags>hyperdimensional;associative-memory;vector-database;binary-hdc;kanerva</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>

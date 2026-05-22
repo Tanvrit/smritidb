@@ -1,3 +1,3 @@
-module github.com/kanervalabs/smritidb/packages/smritidb-go
+module github.com/Tanvrit/smritidb/packages/smritidb-go
 
 go 1.21

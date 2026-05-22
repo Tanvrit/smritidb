@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	smritidb "github.com/kanervalabs/smritidb/packages/smritidb-go"
+	smritidb "github.com/Tanvrit/smritidb/packages/smritidb-go"
 )
 
 // ExampleStore_Recall demonstrates the basic open/put/recall/close flow

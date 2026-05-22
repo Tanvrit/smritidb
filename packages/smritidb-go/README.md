@@ -38,7 +38,7 @@ import (
     "fmt"
     "log"
 
-    smritidb "github.com/kanervalabs/smritidb/packages/smritidb-go"
+    smritidb "github.com/Tanvrit/smritidb/packages/smritidb-go"
 )
 
 func main() {

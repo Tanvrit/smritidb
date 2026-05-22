@@ -22,7 +22,7 @@
 
 **Concurrent forms (to be filed with the Complete Specification):** Form 1 (Application for Grant), Form 2 (this Specification), Form 3 (Statement and Undertaking under §8), Form 5 (Declaration as to Inventorship). Form 9 (Request for Early Publication) is optional. Form 18 (Request for Examination) is to be filed within 48 months of the priority date.
 
-**Pinned source SHA:** `17334f8` (Git repository: `kanervalabs/smritidb`, branch: `main`). Every code citation in this filing package is anchored to this commit and may be retrieved via the command `git show 17334f8:<path>`.
+**Pinned source SHA:** `17334f8` (Git repository: `Tanvrit/smritidb`, branch: `main`). Every code citation in this filing package is anchored to this commit and may be retrieved via the command `git show 17334f8:<path>`.
 
 **License of source:** Apache License, Version 2.0 (with express patent grant). The publication of the source code under Apache-2.0 does not, in the applicant's submission, affect novelty since (i) the Complete Specification is filed within the applicable grace period under §31 of the Patents Act 1970, and (ii) the source repository's public release date is to be confirmed at filing.
 
