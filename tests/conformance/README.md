@@ -20,4 +20,4 @@ cd packages/core-ts && pnpm build
 node -e "..." > ../../tests/conformance/golden.json
 ```
 
-The corpus is intentionally small — eight random_hv vectors, three encode_string vectors, three similarity pairs, one bind round-trip, two bundles, two bag-of-words, two char-ngrams. A passing corpus does not prove the full implementation is correct, only that it agrees with the reference at these specific inputs.
+The corpus is intentionally small — five random_hv vectors, three encode_string vectors, three similarity pairs, one bind round-trip, two bundles, two bag-of-words, two char-ngrams. A passing corpus does not prove the full implementation is correct, only that it agrees with the reference at these specific inputs.

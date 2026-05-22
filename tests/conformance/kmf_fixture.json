@@ -1,0 +1,49 @@
+{
+  "dimension": 1024,
+  "created_at": 1700000010000,
+  "items": [
+    {
+      "id": "alpha",
+      "seed": "key:alpha",
+      "value": "alpha-value",
+      "tags": [
+        "greek",
+        "first"
+      ],
+      "metadata": {
+        "rank": 1,
+        "kind": "letter",
+        "flag": true,
+        "note": null
+      },
+      "created_at": 1700000000000,
+      "access_count": 0,
+      "last_accessed_at": 1700000000000
+    },
+    {
+      "id": "beta",
+      "seed": "key:beta",
+      "value": "beta-value",
+      "tags": [
+        "greek"
+      ],
+      "metadata": {
+        "rank": 2,
+        "kind": "letter"
+      },
+      "created_at": 1700000001000,
+      "access_count": 3,
+      "last_accessed_at": 1700000005000
+    },
+    {
+      "id": "gamma",
+      "seed": "key:gamma",
+      "value": "gamma-value",
+      "tags": [],
+      "metadata": {},
+      "created_at": 1700000002000,
+      "access_count": 0,
+      "last_accessed_at": 1700000002000
+    }
+  ]
+}
