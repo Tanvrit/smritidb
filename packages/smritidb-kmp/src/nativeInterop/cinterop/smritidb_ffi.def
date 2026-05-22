@@ -1,0 +1,25 @@
+# Cinterop definition for the UniFFI-generated C ABI of libsmritidb_ffi.
+#
+# The header lives next to the Swift bindings under
+# packages/smritidb-ffi/bindings/swift/. We expose every UniFFI symbol
+# (the `uniffi_smritidb_ffi_*` and `ffi_smritidb_ffi_*` families plus the
+# `RustBuffer` / `RustCallStatus` shared structs) under the Kotlin
+# package `smritidb_ffi` — the `appleMain` source set imports them as
+# `import smritidb_ffi.*`.
+#
+# Per-target linker options (the path to libsmritidb_ffi.a varies by
+# triple) live in build.gradle.kts; here we just declare the static lib
+# name so Kotlin/Native passes `-lsmritidb_ffi` to the linker.
+
+language = C
+package = smritidb_ffi
+headers = smritidbFFI.h
+headerFilter = smritidbFFI.h
+
+# The header lives next to the Swift bindings under
+# packages/smritidb-ffi/bindings/swift/. We add that dir to the C
+# preprocessor's include path so the `headers = ` line above resolves.
+# `build.gradle.kts` also injects `-I<abs path>` via `compilerOpts(...)`;
+# the absolute path is repeated here so a stand-alone `cinterop` run
+# (outside Gradle) can find the header.
+compilerOpts = -I/Users/viveksingh/Developer/smritidb/packages/smritidb-ffi/bindings/swift
