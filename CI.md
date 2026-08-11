@@ -95,6 +95,17 @@ pnpm -C packages/core-ts build && \
 
 All third-party actions are pinned to a major version tag (e.g. `@v4`). The pin is deliberate — `@latest` is never used, and we accept the trade-off that minor/patch upgrades land automatically. When a major version of a critical action ships breaking changes, bump the pin in a focused PR rather than letting it drift.
 
+## Toolchain version sources of truth
+
+Each toolchain version is declared in exactly one place, and the workflows read it from there rather than restating it:
+
+| Toolchain | Source of truth | How CI reads it |
+|---|---|---|
+| Node | `.nvmrc` | `actions/setup-node` with `node-version-file: .nvmrc` |
+| pnpm | `packageManager` in the root `package.json` | `pnpm/action-setup` with **no** `version:` input |
+
+`pnpm/action-setup@v4` hard-errors (`Multiple versions of pnpm specified`) when it is given a `version:` input *and* finds `packageManager` in `package.json`. `packageManager` is the one to keep: Corepack reads it, so it also governs local dev and `pnpm install` on a contributor's machine — a workflow input governs only CI, and drifting from it is exactly the failure the error is warning about. Bumping pnpm therefore means editing `package.json` alone.
+
 ## Deferred concerns
 
 - **Windows runner for Rust + Python + KMP.** `rusqlite` (bundled) and JNA both have historical pitfalls on the GitHub-hosted `windows-latest` runners — the MSVC toolchain interaction with `bundled` and JNA's library-loading semantics are easy to misconfigure. We build a Windows wheel in `release.yml`, but the full test matrix is Linux + macOS only. Adding Windows tests is a tracked follow-up.

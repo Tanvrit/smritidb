@@ -86,9 +86,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # No `version:` input on purpose. `packageManager` in the root package.json
+      # is the single source of truth for the pnpm version (Corepack reads it, and
+      # it governs local dev too). pnpm/action-setup@v4 errors out with "Multiple
+      # versions of pnpm specified" if both are present.
       - uses: pnpm/action-setup@v4
-        with:
-          version: 9
 
       - uses: actions/setup-node@v4
         with:
