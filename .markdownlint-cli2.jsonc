@@ -1,0 +1,32 @@
+{
+  // markdownlint config for the "Spec — markdown lint" CI job
+  // (.github/workflows/ci.yml → spec-lint).
+  //
+  // Two deliberate carve-outs, and nothing else. Every other rule stays on
+  // at its default, including MD013 for prose.
+  "ignores": [
+    // docs/api/** is generated output (rustdoc, pdoc, Dokka, TypeDoc) that is
+    // checked in and refreshed by docs/regen.sh — see
+    // docs/CONTRIBUTING-API-DOCS.md. Hand-editing it to satisfy a linter would
+    // be reverted by the next regeneration, and it contains third-party
+    // vendored text (e.g. the SIL font license shipped by rustdoc) that we do
+    // not get to reformat at all.
+    "docs/api/**",
+    "node_modules/**",
+    "**/node_modules/**",
+    "**/target/**",
+    "**/dist/**"
+  ],
+  "config": {
+    // Prose stays hard-wrapped at 80. Tables and code blocks do not: a
+    // conformance table column holding `sha256(encodeCharNgrams(input, opts,
+    // dim))` cannot be wrapped without destroying the table, and wrapping a
+    // shell/rust snippet changes what it means. MD013's own sub-options exist
+    // for exactly this, so scope the exemption instead of lowering the rule.
+    "MD013": {
+      "line_length": 80,
+      "tables": false,
+      "code_blocks": false
+    }
+  }
+}

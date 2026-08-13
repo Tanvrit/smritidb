@@ -87,7 +87,10 @@ int main(void) {
 }
 ```
 
-The full C ABI is in [`packages/smritidb-c/include/smritidb.h`](../../packages/smritidb-c/include/smritidb.h). The rustdoc view is at [`api/rust/doc/smritidb_c/index.html`](../api/rust/doc/smritidb_c/index.html).
+The full C ABI is in
+[`packages/smritidb-c/include/smritidb.h`](../../packages/smritidb-c/include/smritidb.h).
+The rustdoc view is at
+[`api/rust/doc/smritidb_c/index.html`](../api/rust/doc/smritidb_c/index.html).
 
 ---
 

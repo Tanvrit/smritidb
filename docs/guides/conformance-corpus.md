@@ -20,7 +20,7 @@ passes.
 |-----------------------|-----------------------------------------------------------------------------------------------------------------|
 | `random_hv`           | `sha256(randomHv(utf8(seed), dim))` matches the listed `sha256`.                                                |
 | `encode_string`       | `sha256(encodeString(input, dim))` matches the listed `sha256`.                                                 |
-| `similarity_pairs`    | `|similarity(randomHv(a_seed), randomHv(b_seed)) - expected| < 1e-9`.                                            |
+| `similarity_pairs`    | `\|similarity(randomHv(a_seed), randomHv(b_seed)) - expected\| < 1e-9`.                                          |
 | `bind_round_trip`     | `bind(bind(a, b), b) == a` exactly; similarity = 1.0.                                                            |
 | `bundle`              | `sha256(bundle([randomHv(s) for s in seeds]))` matches the listed `sha256`.                                     |
 | `text_bag_of_words`   | `sha256(encodeBagOfWords(input, opts, dim))` matches the listed `sha256`.                                       |

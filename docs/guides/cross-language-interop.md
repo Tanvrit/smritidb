@@ -10,7 +10,7 @@ end-to-end form.
 
 ## The demo
 
-```
+```text
 +----------------+              writes              +---------------------+
 | Python         | -------------------------------> | /tmp/smritidb-      |
 | PyO3 -> Rust   |                                  |  polyglot.db        |
