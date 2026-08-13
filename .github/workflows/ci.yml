@@ -49,9 +49,26 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # `stable`, not the MSRV floor. `dtolnay/rust-toolchain@stable` with
+      # `toolchain: "1.75"` actually installed 1.75 — the `with:` input wins over
+      # the ref — and the committed lockfiles cannot be resolved by that Cargo:
+      # uuid 1.23.1 pulls getrandom 0.4.2, which needs the `edition2024` feature
+      # stabilised only in Cargo 1.85. Every Rust job died in dependency
+      # resolution with "feature `edition2024` is required" — exit code 101,
+      # before a single test ran.
+      #
+      # These jobs build and test the tree AS LOCKED. MSRV is a promise about
+      # what a consumer's own resolution can pick (`uuid = "1"` can still select
+      # a 1.75-compatible 1.x), not about our lockfile. Same call was already
+      # made for conformance.yml in b4c03f1; rust-version = "1.75" is unchanged.
+      #
+      # Caveat worth keeping honest: conformance.yml argued the offender was a
+      # dev-dependency (criterion). For core-rs it is `uuid`, a REAL dependency,
+      # so the MSRV claim holds only under re-resolution, not under this
+      # lockfile. Enforcing it for real wants a `cargo check --no-dev-deps`
+      # (cargo-hack) job on 1.75 — separate work, not this fix.
       - uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: "1.75"
           components: clippy, rustfmt
 
       - uses: actions/cache@v4

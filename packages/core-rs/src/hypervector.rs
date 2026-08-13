@@ -19,7 +19,7 @@ pub type Hypervector = Vec<u8>;
 /// Uses BLAKE3 in XOF mode to expand the seed to `ceil(dim/8)` bytes, then
 /// unpacks MSB-first within each byte (per SPEC §1.1).
 pub fn random_hv(seed: &[u8], dim: usize) -> Hypervector {
-    let bytes = (dim + 7) / 8;
+    let bytes = dim.div_ceil(8);
     let mut buf = vec![0u8; bytes];
     let mut hasher = blake3::Hasher::new();
     hasher.update(seed);

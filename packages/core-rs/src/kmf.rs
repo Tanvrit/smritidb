@@ -16,10 +16,6 @@
 //! order — pass a `serde_json::Value::Object` whose keys are in the order you
 //! want them serialised.
 
-// Manual `(d + 7) / 8` is the byte-aligned-bit-length idiom used throughout
-// this crate (see `hypervector::random_hv`); keep the style consistent.
-#![allow(clippy::manual_div_ceil)]
-
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 use thiserror::Error;
@@ -138,7 +134,7 @@ pub fn write_kmf(snapshot: &KmfSnapshot) -> Result<Vec<u8>, KmfError> {
     }
 
     let d = snapshot.dimension;
-    let bytes_per_hv = (d + 7) / 8;
+    let bytes_per_hv = d.div_ceil(8);
     let mut hv_bytes = vec![0u8; snapshot.items.len() * bytes_per_hv];
     pack_hypervector_block(&mut hv_bytes, &snapshot.items, d)?;
 
@@ -193,7 +189,7 @@ fn build_payload(blocks: &[u8], header: &[u8]) -> Vec<u8> {
 }
 
 fn pack_hypervector_block(out: &mut [u8], items: &[KmfItem], d: usize) -> Result<(), KmfError> {
-    let bytes_per_hv = (d + 7) / 8;
+    let bytes_per_hv = d.div_ceil(8);
     for (i, item) in items.iter().enumerate() {
         if item.key.len() != d {
             return Err(KmfError::DimensionMismatch {
@@ -318,7 +314,7 @@ pub fn read_kmf(bytes: &[u8]) -> Result<KmfSnapshot, KmfError> {
     }
 
     let d = header.dimension;
-    let bytes_per_hv = (d + 7) / 8;
+    let bytes_per_hv = d.div_ceil(8);
 
     let hv_ref = header
         .index
