@@ -96,9 +96,13 @@ cd ../smritidb-ffi
 SYSROOT_X64=$HOME/.konan/dependencies/x86_64-unknown-linux-gnu-gcc-8.3.0-glibc-2.19-kernel-4.9-2/x86_64-unknown-linux-gnu/sysroot
 SYSROOT_ARM64=$HOME/.konan/dependencies/aarch64-unknown-linux-gnu-gcc-8.3.0-glibc-2.25-kernel-4.9-2/aarch64-unknown-linux-gnu/sysroot
 CFLAGS_x86_64_unknown_linux_gnu="--sysroot=$SYSROOT_X64" \
+  CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-unknown-linux-gnu-gcc \
+  CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_AR=x86_64-unknown-linux-gnu-ar \
   CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_RUSTFLAGS="-C link-arg=--sysroot=$SYSROOT_X64" \
   cargo build --release --target x86_64-unknown-linux-gnu
 CFLAGS_aarch64_unknown_linux_gnu="--sysroot=$SYSROOT_ARM64" \
+  CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-unknown-linux-gnu-gcc \
+  CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_AR=aarch64-unknown-linux-gnu-ar \
   CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_RUSTFLAGS="-C link-arg=--sysroot=$SYSROOT_ARM64" \
   cargo build --release --target aarch64-unknown-linux-gnu
 
@@ -112,7 +116,9 @@ docker run --rm --platform linux/amd64 \
   debian:bookworm-slim /test/test.kexe
 ```
 
-On a native Linux CI runner the `brew install` step is unnecessary — cargo finds the host `cc` directly, the `linker = ...` entries in `packages/smritidb-ffi/.cargo/config.toml` are ignored, and `gradle :linuxX64Test` (or `:linuxArm64Test`) actually executes the test binary. The build.gradle.kts wires `-l:libsmritidb_ffi.a` on Linux so the link picks the static archive deterministically even when `cargo build` has also produced `libsmritidb_ffi.so` next to it.
+The two `CARGO_TARGET_*_LINKER` / `_AR` vars are passed on the command line rather than declared in `packages/smritidb-ffi/.cargo/config.toml`, and that is deliberate: a `[target.x86_64-unknown-linux-gnu]` block in that file also applies when the triple is the **host**, so on a Linux runner it hijacks the plain `cargo test` and fails with a "linker `x86_64-unknown-linux-gnu-gcc` not found" error before compiling anything. That is what kept the `rust-ffi` and `kmp-jvm` CI jobs from ever running a test.
+
+On a native Linux CI runner the `brew install` step is unnecessary — cargo finds the host `cc` directly and `gradle :linuxX64Test` (or `:linuxArm64Test`) actually executes the test binary. The build.gradle.kts wires `-l:libsmritidb_ffi.a` on Linux so the link picks the static archive deterministically even when `cargo build` has also produced `libsmritidb_ffi.so` next to it.
 
 ## Quick example
 

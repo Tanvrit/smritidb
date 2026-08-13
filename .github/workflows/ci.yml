@@ -10,7 +10,7 @@
 #   - rust-ffi         — packages/smritidb-ffi   — 6  tests
 #   - rust-c-abi       — packages/smritidb-c     — 2  tests + C smoke
 #   - python           — packages/smritidb-py    — 21 tests (maturin + pytest)
-#   - kmp-jvm          — packages/smritidb-kmp   — 12 tests (Gradle :jvmTest)
+#   - kmp-jvm          — packages/smritidb-kmp   — 13 tests (Gradle :jvmTest)
 #   - typescript       — packages/core-ts        — 73 tests
 #   - conformance-gate — re-emits KMF + diffs    — depends on rust-core + typescript
 #   - notebooks        — Phase 0 notebook smoke  — kept from previous CI
@@ -221,9 +221,26 @@ jobs:
       - name: Install maturin + pytest
         run: pip install "maturin>=1.7,<2.0" pytest
 
-      - name: Build extension (maturin develop --release)
+      # `maturin develop` is NOT usable here. It hard-requires an active
+      # virtualenv/conda env and exits 1 with "Couldn't find a virtualenv or
+      # conda environment" — actions/setup-python puts a plain interpreter on
+      # PATH, not a venv. It works on a contributor's machine only because the
+      # repo root has a gitignored `.venv/` that maturin finds by walking
+      # parents, which is precisely why the breakage was invisible until this
+      # job was first allowed to run.
+      #
+      # Build the abi3 wheel and install it instead: the wheel is what the 21
+      # tests import (`python-source = "python"` means `import smritidb` must
+      # resolve from site-packages, not the source tree — with the wheel
+      # uninstalled, collection fails with ModuleNotFoundError, so a green
+      # pytest here really is testing the freshly built extension).
+      - name: Build extension wheel (maturin build --release)
         working-directory: packages/smritidb-py
-        run: maturin develop --release
+        run: maturin build --release --out dist
+
+      - name: Install the built wheel
+        working-directory: packages/smritidb-py
+        run: pip install --force-reinstall dist/*.whl
 
       - name: Run pytest
         working-directory: packages/smritidb-py
@@ -347,6 +364,14 @@ jobs:
       - name: Run :jvmTest (Apple smoke)
         working-directory: packages/smritidb-kmp
         run: gradle :jvmTest --no-daemon --stacktrace
+
+      - name: Upload test reports on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kmp-apple-test-reports
+          path: packages/smritidb-kmp/build/reports/tests/
+          if-no-files-found: ignore
 
   # ---------------------------------------------------------------------------
   # TypeScript reference — produces the conformance corpus and KMF fixture.

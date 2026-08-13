@@ -200,8 +200,14 @@ jobs:
 
       - run: pip install "maturin>=1.7,<2.0" pytest
 
+      # Same reason as ci.yml's `python` job: `maturin develop` hard-requires
+      # an active virtualenv and actions/setup-python does not provide one.
+      # Build the wheel and install it.
       - working-directory: packages/smritidb-py
-        run: maturin develop --release
+        run: maturin build --release --out dist
+
+      - working-directory: packages/smritidb-py
+        run: pip install --force-reinstall dist/*.whl
 
       - working-directory: packages/smritidb-py
         run: pytest -q

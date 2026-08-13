@@ -15,8 +15,8 @@ Runs on every push to `main` and every pull request. Each binding is its own job
 | `rust-core` | ubuntu-latest | `cargo fmt --check`, `cargo clippy -D warnings`, `cargo test --release` (50 tests) over `packages/core-rs`, plus a `cargo build --release --features wasm` smoke. |
 | `rust-ffi` | ubuntu-latest | `cargo test --release` over `packages/smritidb-ffi` (6 tests) and builds the cdylib for downstream KMP. |
 | `rust-c-abi` | ubuntu-latest | `cargo test --release` over `packages/smritidb-c` (2 tests) plus compiles and runs the C smoke harness under `packages/smritidb-c/tests/smoke.c`. |
-| `python` | ubuntu-latest | `maturin develop --release` + `pytest -q` over `packages/smritidb-py` (21 tests). |
-| `kmp-jvm` | ubuntu-latest | Builds the UniFFI cdylib, stages it under `target/release-jna/linux-x86-64/`, then `gradle :jvmTest` (12 tests). |
+| `python` | ubuntu-latest | `maturin build --release` + `pip install dist/*.whl` + `pytest -q` over `packages/smritidb-py` (21 tests). `maturin develop` is not usable on CI — it requires an active virtualenv, which `actions/setup-python` does not create. |
+| `kmp-jvm` | ubuntu-latest | Builds the UniFFI cdylib, stages it under `target/release-jna/linux-x86-64/`, then `gradle :jvmTest` (13 tests). |
 | `kmp-apple` | macos-latest | Compile + JVM smoke on macOS. Cinterop wiring for the real Apple targets is deferred. |
 | `typescript` | ubuntu-latest | `pnpm typecheck`, `pnpm lint`, `pnpm test` (73 tests), `pnpm build`. |
 | `conformance-gate` | ubuntu-latest | Depends on `rust-core` + `typescript`. Asserts `tests/conformance/golden.json` and `tests/conformance/kmf_fixture.bin` are unchanged from HEAD, then re-emits the KMF fixture from the TS reference and `cmp`s the bytes. |
@@ -73,10 +73,14 @@ cd packages/smritidb-c && cargo test --release && \
     tests/smoke.c -o tests/smoke && \
   LD_LIBRARY_PATH=target/release ./tests/smoke
 
-# Python — 21 tests
+# Python — 21 tests. `maturin develop` needs an ACTIVE virtualenv (it walks
+# parents looking for `.venv/`); CI builds and installs the wheel instead.
 cd packages/smritidb-py && maturin develop --release && pytest -q
+#   …or, exactly as CI does it:
+#   cd packages/smritidb-py && maturin build --release --out dist \
+#     && pip install --force-reinstall dist/*.whl && pytest -q
 
-# KMP JVM — 12 tests (requires the FFI cdylib staged under release-jna/)
+# KMP JVM — 13 tests (requires the FFI cdylib staged under release-jna/)
 cd packages/smritidb-ffi && cargo build --release && \
   mkdir -p target/release-jna/$(uname -s | tr '[:upper:]' '[:lower:]')-$(uname -m) && \
   cp target/release/libsmritidb_ffi.* target/release-jna/$(uname -s | tr '[:upper:]' '[:lower:]')-$(uname -m)/ ; \

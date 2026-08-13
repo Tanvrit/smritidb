@@ -415,7 +415,7 @@ private fun findLibraryName(componentName: String): String {
   if (libOverride != null) {
     return libOverride
   }
-  return "uniffi_smritidb"
+  return "smritidb_ffi"
 }
 
 private inline fun <reified Lib : Library> loadIndirect(componentName: String): Lib =

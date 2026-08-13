@@ -1,0 +1,20 @@
+# UniFFI bindgen configuration for smritidb-ffi.
+#
+# `cdylib_name` is the ONLY thing here, and it is load-bearing. In UDL mode
+# UniFFI defaults the runtime library name to `uniffi_<namespace>` — i.e.
+# `uniffi_smritidb` — but the crate's `[lib] name` is `smritidb_ffi`, so cargo
+# emits `libsmritidb_ffi.{so,dylib}`. Without this override the generated
+# Kotlin calls `Native.load("uniffi_smritidb", …)` and every JVM test dies with
+#
+#   UnsatisfiedLinkError: Unable to load library 'uniffi_smritidb'
+#   … Native library (darwin-aarch64/libuniffi_smritidb.dylib) not found
+#
+# which is exactly what the `kmp-apple` job hit the first time it was allowed
+# to run. Keep this in sync with `[lib] name` in Cargo.toml; the Swift side
+# resolves the same symbol set through `smritidbFFI.h` + `-lsmritidb_ffi`.
+
+[bindings.kotlin]
+cdylib_name = "smritidb_ffi"
+
+[bindings.swift]
+cdylib_name = "smritidb_ffi"

@@ -59,11 +59,32 @@
 #       CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_RUSTFLAGS="-C link-arg=--sysroot=$SYSROOT_ARM64" \
 #       cargo build --release --target aarch64-unknown-linux-gnu
 #
-#   On a native Linux runner the messense toolchain isn't installed and
-#   neither is the K/N sysroot — `cargo build` then just uses the
-#   default `cc` and produces ABI-compatible artefacts. The `linker =`
-#   entries below are still required for the macOS cross path (they
-#   pick the messense binaries off `$PATH`); they're inert on Linux.
+#   The linker/ar for those two triples are deliberately NOT declared
+#   below. This file is loaded for every `cargo` invocation in this
+#   crate, and `[target.<triple>]` applies whenever that triple is
+#   selected — including when it is the HOST triple. On a native
+#   x86_64 Linux runner (CI) a `[target.x86_64-unknown-linux-gnu]
+#   linker = "x86_64-unknown-linux-gnu-gcc"` entry therefore hijacks
+#   the plain `cargo test` / `cargo build`, which then dies with
+#   `error: linker 'x86_64-unknown-linux-gnu-gcc' not found` before
+#   compiling a single crate. (This is what killed the `rust-ffi` and
+#   `kmp-jvm` CI jobs — they never ran a test.) The earlier claim in
+#   this comment that those entries were "inert on Linux" was wrong.
+#
+#   The macOS cross path gets the same wiring via env vars, in the
+#   same shape as the sysroot flags above — set alongside them:
+#
+#     CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-unknown-linux-gnu-gcc \
+#     CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_AR=x86_64-unknown-linux-gnu-ar \
+#       ...cargo build --release --target x86_64-unknown-linux-gnu
+#
+#     CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-unknown-linux-gnu-gcc \
+#     CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_AR=aarch64-unknown-linux-gnu-ar \
+#       ...cargo build --release --target aarch64-unknown-linux-gnu
+#
+#   The Android entries below are safe to keep here: those triples are
+#   never the host triple on any machine we build from, so they only
+#   ever take effect under an explicit `--target`.
 
 [target.aarch64-linux-android]
 linker = "aarch64-linux-android21-clang"
@@ -72,11 +93,3 @@ ar = "llvm-ar"
 [target.x86_64-linux-android]
 linker = "x86_64-linux-android21-clang"
 ar = "llvm-ar"
-
-[target.x86_64-unknown-linux-gnu]
-linker = "x86_64-unknown-linux-gnu-gcc"
-ar = "x86_64-unknown-linux-gnu-ar"
-
-[target.aarch64-unknown-linux-gnu]
-linker = "aarch64-unknown-linux-gnu-gcc"
-ar = "aarch64-unknown-linux-gnu-ar"
