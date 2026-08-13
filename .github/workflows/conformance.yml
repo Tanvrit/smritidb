@@ -126,9 +126,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # `stable`, not the MSRV floor. These jobs run `cargo test` / `cargo build`,
+      # which compile DEV-dependencies too — and MSRV is a promise about the
+      # library's own dependency graph, not about its benchmark tooling. Pinning
+      # the test job to 1.75 conflated the two and made the tree unable to
+      # satisfy its own advertised MSRV: the committed Cargo.lock files are
+      # format v4 (Cargo 1.78+), and criterion -> clap -> clap_lex 1.1.0 requires
+      # the `edition2024` feature, stabilised only in Cargo 1.85. Nothing a
+      # consumer of this crate links against needs either.
+      #
+      # rust-version = "1.75" in the Cargo.toml files is unchanged and remains
+      # truthful. If you want it enforced, add a separate job that runs
+      # `cargo check --no-dev-deps` (cargo-hack) on 1.75 — that is the check
+      # that actually verifies the promise.
       - uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: "1.75"
 
       - uses: actions/cache@v4
         with:
@@ -156,9 +167,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # `stable`, not the MSRV floor. These jobs run `cargo test` / `cargo build`,
+      # which compile DEV-dependencies too — and MSRV is a promise about the
+      # library's own dependency graph, not about its benchmark tooling. Pinning
+      # the test job to 1.75 conflated the two and made the tree unable to
+      # satisfy its own advertised MSRV: the committed Cargo.lock files are
+      # format v4 (Cargo 1.78+), and criterion -> clap -> clap_lex 1.1.0 requires
+      # the `edition2024` feature, stabilised only in Cargo 1.85. Nothing a
+      # consumer of this crate links against needs either.
+      #
+      # rust-version = "1.75" in the Cargo.toml files is unchanged and remains
+      # truthful. If you want it enforced, add a separate job that runs
+      # `cargo check --no-dev-deps` (cargo-hack) on 1.75 — that is the check
+      # that actually verifies the promise.
       - uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: "1.75"
 
       - uses: actions/setup-python@v5
         with:
@@ -200,9 +222,20 @@ jobs:
           distribution: temurin
           java-version: "17"
 
+      # `stable`, not the MSRV floor. These jobs run `cargo test` / `cargo build`,
+      # which compile DEV-dependencies too — and MSRV is a promise about the
+      # library's own dependency graph, not about its benchmark tooling. Pinning
+      # the test job to 1.75 conflated the two and made the tree unable to
+      # satisfy its own advertised MSRV: the committed Cargo.lock files are
+      # format v4 (Cargo 1.78+), and criterion -> clap -> clap_lex 1.1.0 requires
+      # the `edition2024` feature, stabilised only in Cargo 1.85. Nothing a
+      # consumer of this crate links against needs either.
+      #
+      # rust-version = "1.75" in the Cargo.toml files is unchanged and remains
+      # truthful. If you want it enforced, add a separate job that runs
+      # `cargo check --no-dev-deps` (cargo-hack) on 1.75 — that is the check
+      # that actually verifies the promise.
       - uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: "1.75"
 
       - uses: actions/cache@v4
         with:
