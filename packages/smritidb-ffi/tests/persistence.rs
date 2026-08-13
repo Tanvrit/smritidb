@@ -27,12 +27,7 @@ fn persistent_store_sqlite_round_trip() {
     let store = PersistentStore::open_sqlite(path.clone(), opts()).unwrap();
     for i in 0..1000 {
         store
-            .put(
-                format!("key{}", i),
-                vec![i as u8],
-                vec![],
-                None,
-            )
+            .put(format!("key{}", i), vec![i as u8], vec![], None)
             .unwrap();
     }
     store.persist().unwrap();
@@ -55,7 +50,12 @@ fn persistent_store_sqlite_round_trip() {
 #[test]
 fn persistent_store_file_round_trip() {
     let dir = tempfile::tempdir().unwrap();
-    let path = dir.path().join("ffi-store.kmf").to_str().unwrap().to_string();
+    let path = dir
+        .path()
+        .join("ffi-store.kmf")
+        .to_str()
+        .unwrap()
+        .to_string();
 
     let store = PersistentStore::open_file(path.clone(), opts()).unwrap();
     let id = store

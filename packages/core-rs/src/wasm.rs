@@ -256,9 +256,7 @@ pub fn store_snapshot(handle: u32) -> Result<Vec<u8>, JsError> {
     let store = guard
         .get(&handle)
         .ok_or_else(|| JsError::new(&format!("invalid store handle: {handle}")))?;
-    store
-        .snapshot()
-        .map_err(|e| JsError::new(&e.to_string()))
+    store.snapshot().map_err(|e| JsError::new(&e.to_string()))
 }
 
 /// Replace the substrate of an existing store from a KMF snapshot,

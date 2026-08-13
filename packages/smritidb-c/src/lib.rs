@@ -120,7 +120,6 @@ impl SmritidbBytes {
         std::mem::forget(v);
         Self { data, len, cap }
     }
-
 }
 
 /// A recall result. `id` is a NUL-terminated UTF-8 string; `value` is the raw
@@ -176,7 +175,9 @@ pub unsafe extern "C" fn smritidb_open_sqlite(
         }
     };
     let adapter = match core::persist::SqliteAdapter::open(path) {
-        Ok(a) => std::sync::Arc::new(a) as std::sync::Arc<dyn core::PersistenceAdapter + Send + Sync>,
+        Ok(a) => {
+            std::sync::Arc::new(a) as std::sync::Arc<dyn core::PersistenceAdapter + Send + Sync>
+        }
         Err(e) => {
             set_last_error(format!("sqlite open failed: {e}"));
             return ptr::null_mut();

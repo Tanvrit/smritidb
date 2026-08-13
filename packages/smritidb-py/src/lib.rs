@@ -57,7 +57,9 @@ fn py_unbind<'py>(py: Python<'py>, a: &[u8], b: &[u8]) -> PyResult<Bound<'py, Py
 #[pyo3(name = "bundle")]
 fn py_bundle<'py>(py: Python<'py>, hvs: Vec<Vec<u8>>) -> PyResult<Bound<'py, PyBytes>> {
     if hvs.is_empty() {
-        return Err(PyValueError::new_err("bundle requires at least one hypervector"));
+        return Err(PyValueError::new_err(
+            "bundle requires at least one hypervector",
+        ));
     }
     let refs: Vec<&core::Hypervector> = hvs.iter().collect();
     Ok(PyBytes::new_bound(py, &core::bundle(&refs)))
@@ -286,10 +288,7 @@ struct PyPersistentStore {
 }
 
 impl PyPersistentStore {
-    fn build(
-        adapter: Arc<dyn PersistenceAdapter>,
-        dimension: Option<usize>,
-    ) -> PyResult<Self> {
+    fn build(adapter: Arc<dyn PersistenceAdapter>, dimension: Option<usize>) -> PyResult<Self> {
         let mut config = core::StoreConfig::default();
         if let Some(d) = dimension {
             config.dimension = d;
@@ -316,7 +315,6 @@ impl PyPersistentStore {
             .ok_or_else(|| SmritidbError::new_err("store is closed"))?;
         f(store)
     }
-
 }
 
 #[pymethods]

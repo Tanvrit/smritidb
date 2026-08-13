@@ -74,9 +74,8 @@ fn bench_snapshot_read(c: &mut Criterion) {
     group.sample_size(10);
     group.bench_function(BenchmarkId::new("N", PERSIST_N), |b| {
         b.iter(|| {
-            let adapter: Arc<dyn PersistenceAdapter> = Arc::new(
-                SqliteAdapter::open(path.to_str().unwrap()).expect("open"),
-            );
+            let adapter: Arc<dyn PersistenceAdapter> =
+                Arc::new(SqliteAdapter::open(path.to_str().unwrap()).expect("open"));
             let restored = open_persistent_store(
                 adapter,
                 StoreConfig {

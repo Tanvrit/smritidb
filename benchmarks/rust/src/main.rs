@@ -178,7 +178,9 @@ fn bench_primitives() -> Primitives {
         i = i.wrapping_add(1);
     });
 
-    let inputs: Vec<String> = (0..ENCODE_STRING_BATCH).map(|i| format!("item_{i}")).collect();
+    let inputs: Vec<String> = (0..ENCODE_STRING_BATCH)
+        .map(|i| format!("item_{i}"))
+        .collect();
     let mut i = 0usize;
     let encode_string_r = measure("encode_string", ENCODE_STRING_BATCH, || {
         std::hint::black_box(encode_string(&inputs[i % inputs.len()], D));
@@ -433,9 +435,7 @@ fn bench_memory() -> MemoryResult {
     let after = rss_bytes();
     let delta = after.saturating_sub(before);
     let per_item = delta as f64 / PERSIST_N as f64;
-    println!(
-        "  RSS before={before}B after={after}B delta={delta}B = {per_item:.1} bytes/item"
-    );
+    println!("  RSS before={before}B after={after}B delta={delta}B = {per_item:.1} bytes/item");
     // Keep `store` alive past the RSS sample.
     std::hint::black_box(&store);
     MemoryResult {
