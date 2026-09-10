@@ -30,6 +30,14 @@ env:
   RUST_BACKTRACE: "1"
 
 jobs:
+  # Self-hosted only — org policy 2026-09-11: no workflow in any Tanvrit repo
+  # may name a GitHub-hosted image. Every job below ran on `ubuntu-latest`
+  # until then.
+  #
+  # Label sets name the OS and architecture rather than relying on
+  # `group: tanvrit` alone: the group is heterogeneous — ten Linux X64 nodes,
+  # one ARM64 Linux node, macs and a Windows box — and an unpinned job in a
+  # sibling repo has landed on the wrong OS before.
   # ---------------------------------------------------------------------------
   # Fixture parity. Re-emits the KMF fixture from the TS reference and asserts
   # the bytes match the checked-in `kmf_fixture.bin`. Also guards `golden.json`
@@ -37,7 +45,9 @@ jobs:
   # ---------------------------------------------------------------------------
   fixture-parity:
     name: KMF fixture parity (TS emit -> cmp)
-    runs-on: ubuntu-latest
+    runs-on:
+      group: tanvrit
+      labels: [self-hosted, Linux, X64]
     steps:
       - uses: actions/checkout@v4
 
@@ -92,7 +102,9 @@ jobs:
   # ---------------------------------------------------------------------------
   ts-conformance:
     name: TypeScript — corpus tests
-    runs-on: ubuntu-latest
+    runs-on:
+      group: tanvrit
+      labels: [self-hosted, Linux, X64]
     steps:
       - uses: actions/checkout@v4
 
@@ -122,7 +134,9 @@ jobs:
   # ---------------------------------------------------------------------------
   rust-conformance:
     name: Rust — corpus + KMF cross-impl
-    runs-on: ubuntu-latest
+    runs-on:
+      group: tanvrit
+      labels: [self-hosted, Linux, X64]
     steps:
       - uses: actions/checkout@v4
 
@@ -163,7 +177,9 @@ jobs:
   # ---------------------------------------------------------------------------
   py-conformance:
     name: Python — corpus tests (via maturin)
-    runs-on: ubuntu-latest
+    runs-on:
+      group: tanvrit
+      labels: [self-hosted, Linux, X64]
     steps:
       - uses: actions/checkout@v4
 
@@ -219,7 +235,9 @@ jobs:
   # ---------------------------------------------------------------------------
   kmp-conformance:
     name: KMP JVM — corpus tests (via UniFFI)
-    runs-on: ubuntu-latest
+    runs-on:
+      group: tanvrit
+      labels: [self-hosted, Linux, X64]
     steps:
       - uses: actions/checkout@v4
 
@@ -279,7 +297,9 @@ jobs:
   # ---------------------------------------------------------------------------
   conformance-summary:
     name: Conformance summary (required check)
-    runs-on: ubuntu-latest
+    runs-on:
+      group: tanvrit
+      labels: [self-hosted, Linux, X64]
     needs:
       - fixture-parity
       - ts-conformance

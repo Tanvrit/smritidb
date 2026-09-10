@@ -39,22 +39,40 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-latest
+          # Self-hosted only — org policy 2026-09-11: no workflow in any
+          # Tanvrit repo may name a GitHub-hosted image. These five legs were
+          # `ubuntu-latest` x2 / `macos-latest` x2 / `windows-latest`.
+          #
+          # Unlike a jpackage matrix, the host architecture here does NOT have
+          # to match `target`: maturin-action cross-compiles (zig + the
+          # manylinux image for Linux, the Apple SDK's second slice for
+          # Darwin). So `aarch64-unknown-linux-gnu` builds on an X64 host and
+          # both Apple targets build on whichever mac is up. The label sets
+          # pin OS only, deliberately — pinning arch as well would idle four
+          # of the five legs behind two specific machines for no gain.
+          - os: linux
+            runner: '{"group": "tanvrit", "labels": ["self-hosted", "Linux", "X64"]}'
             target: x86_64-unknown-linux-gnu
             manylinux: auto
-          - os: ubuntu-latest
+          - os: linux
+            runner: '{"group": "tanvrit", "labels": ["self-hosted", "Linux", "X64"]}'
             target: aarch64-unknown-linux-gnu
             manylinux: auto
-          - os: macos-latest
+          - os: macos
+            runner: '{"group": "tanvrit", "labels": ["self-hosted", "macOS"]}'
             target: aarch64-apple-darwin
             manylinux: auto
-          - os: macos-latest
+          - os: macos
+            runner: '{"group": "tanvrit", "labels": ["self-hosted", "macOS"]}'
             target: x86_64-apple-darwin
             manylinux: auto
-          - os: windows-latest
+          - os: windows
+            runner: '{"group": "tanvrit", "labels": ["self-hosted", "windows"]}'
             target: x86_64-pc-windows-msvc
             manylinux: auto
-    runs-on: ${{ matrix.os }}
+    # fromJSON() is required: without it the expression yields a JSON *string*
+    # and the object form (`{group, labels}`) is never parsed as a runner spec.
+    runs-on: ${{ fromJSON(matrix.runner) }}
     steps:
       - uses: actions/checkout@v4
 
@@ -82,7 +100,9 @@ jobs:
   # ---------------------------------------------------------------------------
   npm-package:
     name: TypeScript npm tarball
-    runs-on: ubuntu-latest
+    runs-on:
+      group: tanvrit
+      labels: [self-hosted, Linux, X64]
     steps:
       - uses: actions/checkout@v4
 
@@ -127,7 +147,9 @@ jobs:
   # ---------------------------------------------------------------------------
   kmp-jvm:
     name: KMP JVM Maven publication
-    runs-on: ubuntu-latest
+    runs-on:
+      group: tanvrit
+      labels: [self-hosted, Linux, X64]
     steps:
       - uses: actions/checkout@v4
 
@@ -168,7 +190,9 @@ jobs:
   # ---------------------------------------------------------------------------
   dotnet-nuget:
     name: .NET NuGet (scaffold; skipped)
-    runs-on: ubuntu-latest
+    runs-on:
+      group: tanvrit
+      labels: [self-hosted, Linux, X64]
     if: false # Flip to true once packages/smritidb-dotnet has a real csproj.
     steps:
       - uses: actions/checkout@v4
@@ -189,7 +213,9 @@ jobs:
   # ---------------------------------------------------------------------------
   github-release:
     name: Attach artifacts to GitHub Release
-    runs-on: ubuntu-latest
+    runs-on:
+      group: tanvrit
+      labels: [self-hosted, Linux, X64]
     needs: [python-wheels, npm-package, kmp-jvm]
     if: startsWith(github.ref, 'refs/tags/v')
     steps:

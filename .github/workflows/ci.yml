@@ -38,6 +38,14 @@ env:
   RUST_BACKTRACE: "1"
 
 jobs:
+  # Self-hosted only — org policy 2026-09-11: no workflow in any Tanvrit repo
+  # may name a GitHub-hosted image. Every job below ran on `ubuntu-latest`
+  # (and one on `macos-latest`) until then.
+  #
+  # Label sets name the OS and architecture rather than relying on
+  # `group: tanvrit` alone: the group is heterogeneous — ten Linux X64 nodes,
+  # one ARM64 Linux node, macs and a Windows box — and an unpinned job in a
+  # sibling repo has landed on the wrong OS before.
   # ---------------------------------------------------------------------------
   # Rust core — primary correctness gate. 50 tests including the conformance
   # corpus (loads tests/conformance/golden.json) and the KMF cross-impl test
@@ -45,7 +53,9 @@ jobs:
   # ---------------------------------------------------------------------------
   rust-core:
     name: Rust core (cargo test)
-    runs-on: ubuntu-latest
+    runs-on:
+      group: tanvrit
+      labels: [self-hosted, Linux, X64]
     steps:
       - uses: actions/checkout@v4
 
@@ -114,7 +124,9 @@ jobs:
   # ---------------------------------------------------------------------------
   rust-ffi:
     name: Rust FFI (UniFFI)
-    runs-on: ubuntu-latest
+    runs-on:
+      group: tanvrit
+      labels: [self-hosted, Linux, X64]
     needs: rust-core
     steps:
       - uses: actions/checkout@v4
@@ -155,7 +167,9 @@ jobs:
   # ---------------------------------------------------------------------------
   rust-c-abi:
     name: Rust C ABI (+ C smoke)
-    runs-on: ubuntu-latest
+    runs-on:
+      group: tanvrit
+      labels: [self-hosted, Linux, X64]
     needs: rust-core
     steps:
       - uses: actions/checkout@v4
@@ -195,7 +209,9 @@ jobs:
   # ---------------------------------------------------------------------------
   python:
     name: Python (maturin + pytest)
-    runs-on: ubuntu-latest
+    runs-on:
+      group: tanvrit
+      labels: [self-hosted, Linux, X64]
     needs: rust-core
     steps:
       - uses: actions/checkout@v4
@@ -255,8 +271,8 @@ jobs:
           if-no-files-found: ignore
 
   # ---------------------------------------------------------------------------
-  # KMP — JVM target only on CI for now. Apple targets run on macos-latest in
-  # the kmp-apple job below. Other targets (Android Native, Linux, JS, WasmJs)
+  # KMP — JVM target only on CI for now. Apple targets run on the self-hosted
+  # mac fleet in the kmp-apple job below. Other targets (Android Native, Linux, JS, WasmJs)
   # are declared in build.gradle.kts but are not yet implemented end-to-end;
   # they are deferred until a real `actual` exists. The JVM target uses the
   # UniFFI-generated Kotlin loading libsmritidb_ffi.so via JNA, so we have to
@@ -264,7 +280,9 @@ jobs:
   # ---------------------------------------------------------------------------
   kmp-jvm:
     name: KMP JVM (gradle :jvmTest)
-    runs-on: ubuntu-latest
+    runs-on:
+      group: tanvrit
+      labels: [self-hosted, Linux, X64]
     needs: rust-ffi
     steps:
       - uses: actions/checkout@v4
@@ -316,13 +334,15 @@ jobs:
           if-no-files-found: ignore
 
   # ---------------------------------------------------------------------------
-  # KMP Apple — macOS-only. Runs on macos-latest. For now this is a thin
-  # compile check: build the static lib + run jvmTest as a smoke. Per-target
+  # KMP Apple — macOS-only, on the self-hosted mac fleet. For now this is a
+  # thin compile check: build the static lib + run jvmTest as a smoke. Per-target
   # Cinterop wiring lands when an Apple `actual` ships.
   # ---------------------------------------------------------------------------
   kmp-apple:
     name: KMP Apple (macOS, smoke)
-    runs-on: macos-latest
+    runs-on:
+      group: tanvrit
+      labels: [self-hosted, macOS]
     needs: rust-core
     steps:
       - uses: actions/checkout@v4
@@ -379,7 +399,9 @@ jobs:
   # ---------------------------------------------------------------------------
   typescript:
     name: TypeScript (pnpm test)
-    runs-on: ubuntu-latest
+    runs-on:
+      group: tanvrit
+      labels: [self-hosted, Linux, X64]
     steps:
       - uses: actions/checkout@v4
 
@@ -426,7 +448,9 @@ jobs:
   # ---------------------------------------------------------------------------
   conformance-gate:
     name: Conformance gate (bit-exactness)
-    runs-on: ubuntu-latest
+    runs-on:
+      group: tanvrit
+      labels: [self-hosted, Linux, X64]
     needs: [rust-core, typescript]
     steps:
       - uses: actions/checkout@v4
@@ -490,7 +514,9 @@ jobs:
   # ---------------------------------------------------------------------------
   notebooks:
     name: Notebooks — Phase 0 smoke
-    runs-on: ubuntu-latest
+    runs-on:
+      group: tanvrit
+      labels: [self-hosted, Linux, X64]
     steps:
       - uses: actions/checkout@v4
 
@@ -507,7 +533,9 @@ jobs:
 
   spec-lint:
     name: Spec — markdown lint
-    runs-on: ubuntu-latest
+    runs-on:
+      group: tanvrit
+      labels: [self-hosted, Linux, X64]
     steps:
       - uses: actions/checkout@v4
       - uses: DavidAnson/markdownlint-cli2-action@v16
