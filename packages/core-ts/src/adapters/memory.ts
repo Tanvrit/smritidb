@@ -1,4 +1,4 @@
-import type { StorageAdapter } from "./index.js";
+import type { StorageAdapter } from "./core.js";
 
 /** Ephemeral in-memory adapter. Useful in tests and as a reference implementation. */
 export class MemoryAdapter implements StorageAdapter {

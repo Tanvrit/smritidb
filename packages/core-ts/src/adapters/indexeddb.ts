@@ -1,4 +1,4 @@
-import type { StorageAdapter } from "./index.js";
+import type { StorageAdapter } from "./core.js";
 
 const DEFAULT_DB = "smritidb";
 const DEFAULT_STORE = "kmf";

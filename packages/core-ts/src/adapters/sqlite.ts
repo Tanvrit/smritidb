@@ -1,4 +1,4 @@
-import type { StorageAdapter } from "./index.js";
+import type { StorageAdapter } from "./core.js";
 
 /**
  * SQLite adapter using `better-sqlite3` as a peer dependency.
@@ -192,7 +192,6 @@ export function migrateLegacySchema(db: SqliteDatabase): boolean {
 
   db.exec(`DROP TABLE smritidb`);
   // One-line warning so operators see the migration in their logs.
-  // eslint-disable-next-line no-console
   console.warn(
     "[smritidb/sqlite] migrated legacy `smritidb` table to `smritidb_snapshot` (one-shot)",
   );
@@ -203,8 +202,11 @@ async function openDatabase(path: string): Promise<SqliteDatabase> {
   // Dynamic import so users who don't need SQLite don't pay the cost.
   // better-sqlite3 is a peer dependency (optional). The dynamic specifier
   // hides it from tsc's static checker so installs without it still type-check.
+  // `webpackIgnore` leaves the import to Node at runtime: without it webpack
+  // (e.g. a Next.js server build) turns the expression into an empty context
+  // module, warns "Critical dependency", and the import fails when it runs.
   const specifier = "better-sqlite3";
-  const mod = (await import(/* @vite-ignore */ specifier)) as {
+  const mod = (await import(/* webpackIgnore: true */ /* @vite-ignore */ specifier)) as {
     default: new (path: string) => SqliteDatabase;
   };
   return new mod.default(path);
@@ -254,9 +256,17 @@ export interface SqliteStatement {
   all(...params: unknown[]): unknown[];
 }
 
-export interface SqliteAdapterOptions {
-  // Reserved for future use. The legacy `tableName` / `rowKey` knobs from
-  // Phase 1 were removed when the schema was unified with the Rust core; the
-  // canonical layout is single-snapshot in `smritidb_snapshot`. Kept as an
-  // empty interface so the call signature stays stable for downstream users.
-}
+/**
+ * Reserved options bag for {@link sqliteAdapter}. The legacy `tableName` /
+ * `rowKey` knobs from Phase 1 were removed when the schema was unified with
+ * the Rust core; the canonical layout is single-snapshot in
+ * `smritidb_snapshot`. The parameter is kept so the call signature stays
+ * stable for downstream users; knobs can return in v0.2.0 as an interface of
+ * optional fields.
+ *
+ * `object`, not an empty interface: `{}` accepts every non-nullish value, so
+ * `sqliteAdapter(db, 0)` type-checked. `object` still accepts any options
+ * object — including a caller's leftover `{ tableName }` — exactly as the
+ * empty interface did, and an interface can still `extend` it.
+ */
+export type SqliteAdapterOptions = object;

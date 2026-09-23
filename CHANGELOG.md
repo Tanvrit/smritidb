@@ -2,6 +2,18 @@
 
 All notable changes to Smritidb will be documented in this file. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning follows [SemVer](https://semver.org/).
 
+## [Unreleased]
+
+### Changed — TypeScript (core-ts)
+- `@tanvrit/smritidb` now has a `browser` export condition pointing at a Node-free entry (`dist/index.browser.js`, with its own `.d.ts`): the full surface minus `fsAdapter` and `sqliteAdapter`. Web bundlers previously had to resolve `node:fs/promises` and failed (`UnhandledSchemeError`). The Node entry's surface is unchanged.
+- `SqliteAdapterOptions` is now `object` instead of an empty interface, so a primitive (`sqliteAdapter(db, 0)`) no longer type-checks. Every options object accepted before is still accepted.
+
+### Fixed — TypeScript (core-ts)
+- `sqliteAdapter(path)` in a webpack-bundled server (e.g. Next.js) failed at runtime with `Cannot find module 'better-sqlite3'`: webpack compiled the dynamic import into an empty context module. It is now marked `webpackIgnore` and left to Node.
+
+### Added — Infrastructure
+- ESLint 9 (flat config, `typescript-eslint` recommended) for `packages/core-ts` and `web`. The `lint` scripts existed but ESLint was never installed, so `pnpm lint` could not run.
+
 ## [0.1.0] — 2026-05-22
 
 ### Added — Spec

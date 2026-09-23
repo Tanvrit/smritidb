@@ -1,4 +1,4 @@
-import type { StorageAdapter } from "./index.js";
+import type { StorageAdapter } from "./core.js";
 
 /**
  * Filesystem adapter — writes the substrate as a single KMF file at `path`.
