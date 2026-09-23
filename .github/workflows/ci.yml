@@ -16,7 +16,8 @@
 #   - notebooks        — Phase 0 notebook smoke  — kept from previous CI
 #   - spec-lint        — markdownlint over SPEC  — kept from previous CI
 #
-# Action versions are pinned to major tags (semver-compatible upgrades only).
+# Action versions are pinned to major tags (semver-compatible upgrades only),
+# except astral-sh/setup-uv, which publishes no major tag and is SHA-pinned.
 # Caches use actions/cache@v4 for Cargo and pnpm; Gradle uses gradle/actions
 # which manages its own cache layout.
 
@@ -162,8 +163,8 @@ jobs:
 
   # ---------------------------------------------------------------------------
   # Smritidb C ABI — extern "C" surface consumed by Go, Dart, .NET. 2 Rust
-  # tests + a standalone C smoke test compiled with clang against the
-  # generated header.
+  # tests + a standalone C smoke test compiled with the host C compiler (`cc`)
+  # against the generated header.
   # ---------------------------------------------------------------------------
   rust-c-abi:
     name: Rust C ABI (+ C smoke)
@@ -195,12 +196,38 @@ jobs:
         working-directory: packages/smritidb-c
         run: cargo build --release
 
+      # `cc`, not `clang`. The self-hosted Linux fleet (Debian 13) has no clang,
+      # and this step died on its first line: "clang: command not found", exit
+      # 127 (job 103168106059). Nothing here needs clang: smoke.c is plain C99,
+      # every flag below is one any Unix C driver accepts, and what the test
+      # checks is the platform C ABI — the compiler-independent contract that
+      # Go/Dart/.NET consume.
+      #
+      # `cc` is also not a new host requirement: the `cargo test` step above
+      # already compiled C with it (libsqlite3-sys builds the bundled SQLite
+      # through the `cc` crate) and rustc links through it. Installing clang
+      # via apt was the alternative and is declined — every Linux runner
+      # registration here is a root process on one shared host, and a CI job
+      # should not mutate that host's packages.
+      #
+      # smoke.c now precedes -lsmritidb_c. A shared library named BEFORE the
+      # object that references it is dropped by linkers that default to
+      # --as-needed (Ubuntu's GCC does), failing the link with undefined
+      # references; source-then-library is correct under every linker.
       - name: Build and run C smoke test
         working-directory: packages/smritidb-c
         run: |
-          clang -I include -L target/release -lsmritidb_c \
-            -Wl,-rpath,'$ORIGIN/../target/release' \
-            tests/smoke.c -o tests/smoke
+          set -euo pipefail
+          if ! command -v cc >/dev/null 2>&1; then
+            echo "::error::no C compiler 'cc' on runner ${RUNNER_NAME} ($(uname -srm)) — cargo compiled C with it in the steps above, so the host changed mid-job"
+            exit 1
+          fi
+          echo "cc: $(command -v cc) — $(cc --version | head -n 1)"
+          # $ORIGIN is for the dynamic linker, so it must reach ld unexpanded.
+          # shellcheck disable=SC2016
+          cc -I include tests/smoke.c -o tests/smoke \
+            -L target/release -lsmritidb_c \
+            -Wl,-rpath,'$ORIGIN/../target/release'
           LD_LIBRARY_PATH=target/release ./tests/smoke
 
   # ---------------------------------------------------------------------------
@@ -218,10 +245,46 @@ jobs:
 
       - uses: dtolnay/rust-toolchain@stable
 
-      - uses: actions/setup-python@v5
+      # Python comes from uv, not actions/setup-python. setup-python resolves
+      # versions from actions/python-versions, which publishes builds for
+      # Ubuntu only, so on this fleet (Debian 13) it fails before doing
+      # anything: "The version '3.11' with architecture 'x64' was not found for
+      # Debian 13" (job 103168105940). uv installs python-build-standalone
+      # interpreters, built against an old glibc baseline so they run on any
+      # glibc x86_64 Linux — no apt, no root, no dependency on which distro a
+      # runner happens to be. uv itself is pinned, and so is the Python minor.
+      #
+      # setup-uv publishes no moving major tag (only vX.Y.Z), so it is pinned
+      # by commit SHA — stricter than CI.md's major-tag rule, which it cannot
+      # follow.
+      #
+      # UV_PYTHON_INSTALL_DIR is per runner REGISTRATION, not $HOME. On a
+      # self-hosted runner setup-uv defaults it to ~/.local/share/uv/python,
+      # and the Linux runners here are root processes on ONE host — runner3,
+      # 4, 6, 7, 8 and 9 all log `Machine name: 'Parmar'` in the failing runs —
+      # so $HOME is shared by concurrent jobs. The tool cache is private to one
+      # registration and survives between its jobs, so the interpreter
+      # downloads once per runner, not once per job.
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        env:
+          UV_PYTHON_INSTALL_DIR: ${{ runner.tool_cache }}/uv-python
         with:
-          python-version: "3.11"
-          cache: pip
+          version: "0.12.18"
+
+      # A real virtualenv in the job's temp dir, activated for every later step
+      # (VIRTUAL_ENV + PATH), so `python`, `maturin` and `pytest` below are this
+      # interpreter's and nothing on the host's PATH. --no-bin keeps
+      # `uv python install` from dropping python3.11 shims into the shared
+      # /root/.local/bin; --managed-python refuses any system interpreter.
+      - name: Provision Python 3.11 venv (uv)
+        run: |
+          set -euo pipefail
+          echo "uv: $(command -v uv) — $(uv --version)"
+          uv python install --no-bin 3.11
+          uv venv --managed-python --python 3.11 "$RUNNER_TEMP/venv"
+          echo "VIRTUAL_ENV=$RUNNER_TEMP/venv" >> "$GITHUB_ENV"
+          echo "$RUNNER_TEMP/venv/bin" >> "$GITHUB_PATH"
+          "$RUNNER_TEMP/venv/bin/python" -c 'import sys; assert sys.version_info[:2] == (3, 11), sys.version; print(sys.executable, sys.version)'
 
       - uses: actions/cache@v4
         with:
@@ -235,28 +298,22 @@ jobs:
             cargo-py-${{ runner.os }}-
 
       - name: Install maturin + pytest
-        run: pip install "maturin>=1.7,<2.0" pytest
+        run: uv pip install "maturin>=1.7,<2.0" pytest
 
-      # `maturin develop` is NOT usable here. It hard-requires an active
-      # virtualenv/conda env and exits 1 with "Couldn't find a virtualenv or
-      # conda environment" — actions/setup-python puts a plain interpreter on
-      # PATH, not a venv. It works on a contributor's machine only because the
-      # repo root has a gitignored `.venv/` that maturin finds by walking
-      # parents, which is precisely why the breakage was invisible until this
-      # job was first allowed to run.
-      #
-      # Build the abi3 wheel and install it instead: the wheel is what the 21
-      # tests import (`python-source = "python"` means `import smritidb` must
-      # resolve from site-packages, not the source tree — with the wheel
-      # uninstalled, collection fails with ModuleNotFoundError, so a green
-      # pytest here really is testing the freshly built extension).
+      # Build the abi3 wheel and install it, rather than `maturin develop`.
+      # The job now HAS an active venv (the step above), so `maturin develop`
+      # would run — but the wheel is what ships, and it is what the 21 tests
+      # import: `python-source = "python"` means `import smritidb` must resolve
+      # from site-packages, not the source tree — with the wheel uninstalled,
+      # collection fails with ModuleNotFoundError, so a green pytest here
+      # really is testing the freshly built extension.
       - name: Build extension wheel (maturin build --release)
         working-directory: packages/smritidb-py
         run: maturin build --release --out dist
 
       - name: Install the built wheel
         working-directory: packages/smritidb-py
-        run: pip install --force-reinstall dist/*.whl
+        run: uv pip install --force-reinstall dist/*.whl
 
       - name: Run pytest
         working-directory: packages/smritidb-py
@@ -315,15 +372,67 @@ jobs:
           mkdir -p target/release-jna/linux-x86-64
           cp target/release/libsmritidb_ffi.so target/release-jna/linux-x86-64/
 
+      # Gradle is pinned in exactly one place: the wrapper committed under
+      # packages/smritidb-kmp (gradle/wrapper/gradle-wrapper.properties;
+      # 8.12.1, the newest Gradle that Kotlin 2.1.20 fully supports). This job
+      # died with "gradle: command not found", exit 127 (job 103168253804):
+      # setup-gradle had no `gradle-version`, so it installed nothing and the
+      # step ran whatever `gradle` the host had — none on the Linux fleet,
+      # Homebrew's 9.3.1 on the MacBook, which is the only reason kmp-apple was
+      # green (job 103168105911 logs docs.gradle.org/9.3.1).
+      #
+      # CI provisions EXACTLY the wrapper's version through setup-gradle, which
+      # downloads over Node's HTTP stack, instead of running ./gradlew: the
+      # wrapper's own JVM-side download was measured timing out against
+      # services.gradle.org on three of this runner group's Macs on 2026-09-10
+      # while curl fetched the same URL in 0.2s (recorded in Tanvrit/ai
+      # ci.yml). kmp-apple lands on those Macs, and one provisioning path for
+      # all three KMP jobs beats a per-OS special case. The version is asserted
+      # before the build, so a mismatch fails loudly rather than building with
+      # some other Gradle.
+      - name: Read the Gradle version the wrapper pins
+        id: gradle-pin
+        run: |
+          set -euo pipefail
+          V="$(sed -n 's#^distributionUrl=.*/gradle-\([0-9][0-9.]*\)-bin\.zip$#\1#p' packages/smritidb-kmp/gradle/wrapper/gradle-wrapper.properties)"
+          if [ -z "$V" ]; then
+            echo "::error::no -bin distributionUrl in packages/smritidb-kmp/gradle/wrapper/gradle-wrapper.properties"
+            exit 1
+          fi
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+
+      # GRADLE_USER_HOME per runner registration, not the host's /root/.gradle
+      # (job 103168253804: "Gradle User Home already exists at /root/.gradle").
+      # That home is shared by every runner process on the host, and concurrent
+      # --no-daemon builds sharing it were measured losing artifact-transform
+      # files mid-build (Tanvrit/ai ci.yml, run 34520698537). RUNNER_WORKSPACE
+      # (<runner>/_work/<repo>) belongs to one registration, which runs one job
+      # at a time, and actions/checkout's clean does not reach it, so the home
+      # stays warm between that runner's jobs.
+      - name: Isolate GRADLE_USER_HOME per runner
+        run: |
+          GUH="$RUNNER_WORKSPACE/.gradle-home"
+          mkdir -p "$GUH"
+          echo "GRADLE_USER_HOME=$GUH" >> "$GITHUB_ENV"
+          echo "runner=$RUNNER_NAME host=$(hostname) GRADLE_USER_HOME=$GUH"
+
       - uses: gradle/actions/setup-gradle@v4
         with:
+          gradle-version: ${{ steps.gradle-pin.outputs.version }}
           cache-read-only: ${{ github.ref != 'refs/heads/main' }}
 
       - name: Run :jvmTest
         working-directory: packages/smritidb-kmp
-        # No gradlew is checked in. Use a system Gradle installed by
-        # gradle/actions/setup-gradle@v4.
-        run: gradle :jvmTest --no-daemon --stacktrace
+        env:
+          WANT: ${{ steps.gradle-pin.outputs.version }}
+        run: |
+          set -euo pipefail
+          HAVE="$(gradle --version 2>/dev/null | awk '/^Gradle /{print $2; exit}' || true)"
+          if [ "$HAVE" != "$WANT" ]; then
+            echo "::error::gradle on PATH ($(command -v gradle || echo none)) is '${HAVE:-missing}', the wrapper pins $WANT"
+            exit 1
+          fi
+          gradle :jvmTest --no-daemon --stacktrace
 
       - name: Upload test reports on failure
         if: failure()
@@ -377,13 +486,46 @@ jobs:
           mkdir -p target/release-jna/darwin-aarch64
           cp target/aarch64-apple-darwin/release/libsmritidb_ffi.dylib target/release-jna/darwin-aarch64/
 
+      # Same Gradle provisioning as kmp-jvm — see the comments there. This job
+      # was green only because Homebrew's gradle 9.3.1 happened to be on the
+      # MacBook's PATH; it now gets the wrapper's version or fails saying so.
+      # The per-runner home matters here too: the MacBook runner built in its
+      # login user's own ~/.gradle, and two runner processes share that machine.
+      - name: Read the Gradle version the wrapper pins
+        id: gradle-pin
+        run: |
+          set -euo pipefail
+          V="$(sed -n 's#^distributionUrl=.*/gradle-\([0-9][0-9.]*\)-bin\.zip$#\1#p' packages/smritidb-kmp/gradle/wrapper/gradle-wrapper.properties)"
+          if [ -z "$V" ]; then
+            echo "::error::no -bin distributionUrl in packages/smritidb-kmp/gradle/wrapper/gradle-wrapper.properties"
+            exit 1
+          fi
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+
+      - name: Isolate GRADLE_USER_HOME per runner
+        run: |
+          GUH="$RUNNER_WORKSPACE/.gradle-home"
+          mkdir -p "$GUH"
+          echo "GRADLE_USER_HOME=$GUH" >> "$GITHUB_ENV"
+          echo "runner=$RUNNER_NAME host=$(hostname) GRADLE_USER_HOME=$GUH"
+
       - uses: gradle/actions/setup-gradle@v4
         with:
+          gradle-version: ${{ steps.gradle-pin.outputs.version }}
           cache-read-only: ${{ github.ref != 'refs/heads/main' }}
 
       - name: Run :jvmTest (Apple smoke)
         working-directory: packages/smritidb-kmp
-        run: gradle :jvmTest --no-daemon --stacktrace
+        env:
+          WANT: ${{ steps.gradle-pin.outputs.version }}
+        run: |
+          set -euo pipefail
+          HAVE="$(gradle --version 2>/dev/null | awk '/^Gradle /{print $2; exit}' || true)"
+          if [ "$HAVE" != "$WANT" ]; then
+            echo "::error::gradle on PATH ($(command -v gradle || echo none)) is '${HAVE:-missing}', the wrapper pins $WANT"
+            exit 1
+          fi
+          gradle :jvmTest --no-daemon --stacktrace
 
       - name: Upload test reports on failure
         if: failure()
@@ -409,7 +551,23 @@ jobs:
       # is the single source of truth for the pnpm version (Corepack reads it, and
       # it governs local dev too). pnpm/action-setup@v4 errors out with "Multiple
       # versions of pnpm specified" if both are present.
+      #
+      # `dest` is per runner registration. The default, ~/setup-pnpm, is ONE
+      # directory for every runner process on the host (they all run as root,
+      # HOME=/root), and pnpm/action-setup deletes it before reinstalling. In
+      # Conformance run 35860816227, fixture-parity on runner6 wiped it at
+      # 12:29:49.05 while ts-conformance on runner4 sat between its own install
+      # (48.99) and setup-node's lookup (49.13): "Unable to locate executable
+      # file: pnpm" (job 107180313410). pnpm WAS provisioned — by a neighbour's
+      # job, then un-provisioned by another. The same race can surface as
+      # "pnpm: command not found" in any later step, and this job races the
+      # Conformance jobs whenever a PR triggers both workflows. Suffixing the
+      # runner name keeps the directory under $HOME, so pnpm's store location
+      # (which depends on whether PNPM_HOME and the checkout share a
+      # filesystem) is exactly what it was.
       - uses: pnpm/action-setup@v4
+        with:
+          dest: ~/setup-pnpm-${{ runner.name }}
 
       - uses: actions/setup-node@v4
         with:
@@ -458,8 +616,11 @@ jobs:
       # No `version:` input on purpose. `packageManager` in the root package.json
       # is the single source of truth for the pnpm version (Corepack reads it, and
       # it governs local dev too). pnpm/action-setup@v4 errors out with "Multiple
-      # versions of pnpm specified" if both are present.
+      # versions of pnpm specified" if both are present. Per-runner `dest`: see
+      # the typescript job.
       - uses: pnpm/action-setup@v4
+        with:
+          dest: ~/setup-pnpm-${{ runner.name }}
 
       - uses: actions/setup-node@v4
         with:
@@ -520,13 +681,27 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+      # Same uv provisioning as the `python` job — see the comments there.
+      # actions/setup-python failed here identically: "The version '3.12' with
+      # architecture 'x64' was not found for Debian 13" (job 103017519632).
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        env:
+          UV_PYTHON_INSTALL_DIR: ${{ runner.tool_cache }}/uv-python
         with:
-          python-version: "3.12"
-          cache: pip
+          version: "0.12.18"
+
+      - name: Provision Python 3.12 venv (uv)
+        run: |
+          set -euo pipefail
+          echo "uv: $(command -v uv) — $(uv --version)"
+          uv python install --no-bin 3.12
+          uv venv --managed-python --python 3.12 "$RUNNER_TEMP/venv"
+          echo "VIRTUAL_ENV=$RUNNER_TEMP/venv" >> "$GITHUB_ENV"
+          echo "$RUNNER_TEMP/venv/bin" >> "$GITHUB_PATH"
+          "$RUNNER_TEMP/venv/bin/python" -c 'import sys; assert sys.version_info[:2] == (3, 12), sys.version; print(sys.executable, sys.version)'
 
       - working-directory: notebooks
-        run: pip install -r requirements.txt
+        run: uv pip install -r requirements.txt
 
       - working-directory: notebooks
         run: jupyter nbconvert --to notebook --execute phase0_hdc_validation.ipynb --output /tmp/exec.ipynb

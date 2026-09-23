@@ -55,7 +55,22 @@ jobs:
       # is the single source of truth for the pnpm version (Corepack reads it, and
       # it governs local dev too). pnpm/action-setup@v4 errors out with "Multiple
       # versions of pnpm specified" if both are present.
+      #
+      # `dest` is per runner registration. The default, ~/setup-pnpm, is ONE
+      # directory for every runner process on the host (they all run as root,
+      # HOME=/root), and pnpm/action-setup deletes it before reinstalling. In
+      # run 35860816227 THIS job, on runner6, wiped it at 12:29:49.05 while
+      # ts-conformance on runner4 sat between its own install (48.99) and
+      # setup-node's lookup (49.13): "Unable to locate executable file: pnpm"
+      # (job 107180313410). pnpm WAS provisioned — then un-provisioned by a
+      # neighbour. The two jobs start together on every trigger (and race
+      # ci.yml's pnpm jobs on PRs), so every run is exposed. Suffixing the
+      # runner name keeps the directory under $HOME, so pnpm's store location
+      # (which depends on whether PNPM_HOME and the checkout share a
+      # filesystem) is exactly what it was.
       - uses: pnpm/action-setup@v4
+        with:
+          dest: ~/setup-pnpm-${{ runner.name }}
 
       - uses: actions/setup-node@v4
         with:
@@ -111,8 +126,11 @@ jobs:
       # No `version:` input on purpose. `packageManager` in the root package.json
       # is the single source of truth for the pnpm version (Corepack reads it, and
       # it governs local dev too). pnpm/action-setup@v4 errors out with "Multiple
-      # versions of pnpm specified" if both are present.
+      # versions of pnpm specified" if both are present. Per-runner `dest`: see
+      # fixture-parity — this is the job that lost the race.
       - uses: pnpm/action-setup@v4
+        with:
+          dest: ~/setup-pnpm-${{ runner.name }}
 
       - uses: actions/setup-node@v4
         with:
@@ -198,10 +216,26 @@ jobs:
       # that actually verifies the promise.
       - uses: dtolnay/rust-toolchain@stable
 
-      - uses: actions/setup-python@v5
+      # Python from uv, not actions/setup-python, which ships Ubuntu builds
+      # only and failed here with "The version '3.11' with architecture 'x64'
+      # was not found for Debian 13" (job 107180313417). Identical to ci.yml's
+      # `python` job — the reasoning (why uv, why the SHA pin, why the
+      # per-runner UV_PYTHON_INSTALL_DIR) is written out there.
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        env:
+          UV_PYTHON_INSTALL_DIR: ${{ runner.tool_cache }}/uv-python
         with:
-          python-version: "3.11"
-          cache: pip
+          version: "0.12.18"
+
+      - name: Provision Python 3.11 venv (uv)
+        run: |
+          set -euo pipefail
+          echo "uv: $(command -v uv) — $(uv --version)"
+          uv python install --no-bin 3.11
+          uv venv --managed-python --python 3.11 "$RUNNER_TEMP/venv"
+          echo "VIRTUAL_ENV=$RUNNER_TEMP/venv" >> "$GITHUB_ENV"
+          echo "$RUNNER_TEMP/venv/bin" >> "$GITHUB_PATH"
+          "$RUNNER_TEMP/venv/bin/python" -c 'import sys; assert sys.version_info[:2] == (3, 11), sys.version; print(sys.executable, sys.version)'
 
       - uses: actions/cache@v4
         with:
@@ -214,16 +248,15 @@ jobs:
           restore-keys: |
             cargo-py-${{ runner.os }}-
 
-      - run: pip install "maturin>=1.7,<2.0" pytest
+      - run: uv pip install "maturin>=1.7,<2.0" pytest
 
-      # Same reason as ci.yml's `python` job: `maturin develop` hard-requires
-      # an active virtualenv and actions/setup-python does not provide one.
-      # Build the wheel and install it.
+      # Same as ci.yml's `python` job: build the wheel and install it, so the
+      # tests import the built extension rather than the source tree.
       - working-directory: packages/smritidb-py
         run: maturin build --release --out dist
 
       - working-directory: packages/smritidb-py
-        run: pip install --force-reinstall dist/*.whl
+        run: uv pip install --force-reinstall dist/*.whl
 
       - working-directory: packages/smritidb-py
         run: pytest -q
@@ -282,13 +315,46 @@ jobs:
           mkdir -p target/release-jna/linux-x86-64
           cp target/release/libsmritidb_ffi.so target/release-jna/linux-x86-64/
 
+      # Gradle is the wrapper's pinned version, provisioned by setup-gradle and
+      # asserted before use — never whatever `gradle` the host has, which here
+      # was none: "gradle: command not found", exit 127 (job 107180313297).
+      # Identical to ci.yml's kmp-jvm job, where the reasoning (why not
+      # ./gradlew, why a per-runner GRADLE_USER_HOME) is written out.
+      - name: Read the Gradle version the wrapper pins
+        id: gradle-pin
+        run: |
+          set -euo pipefail
+          V="$(sed -n 's#^distributionUrl=.*/gradle-\([0-9][0-9.]*\)-bin\.zip$#\1#p' packages/smritidb-kmp/gradle/wrapper/gradle-wrapper.properties)"
+          if [ -z "$V" ]; then
+            echo "::error::no -bin distributionUrl in packages/smritidb-kmp/gradle/wrapper/gradle-wrapper.properties"
+            exit 1
+          fi
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+
+      - name: Isolate GRADLE_USER_HOME per runner
+        run: |
+          GUH="$RUNNER_WORKSPACE/.gradle-home"
+          mkdir -p "$GUH"
+          echo "GRADLE_USER_HOME=$GUH" >> "$GITHUB_ENV"
+          echo "runner=$RUNNER_NAME host=$(hostname) GRADLE_USER_HOME=$GUH"
+
       - uses: gradle/actions/setup-gradle@v4
         with:
+          gradle-version: ${{ steps.gradle-pin.outputs.version }}
           cache-read-only: ${{ github.ref != 'refs/heads/main' }}
 
       - name: gradle :jvmTest
         working-directory: packages/smritidb-kmp
-        run: gradle :jvmTest --no-daemon --stacktrace
+        env:
+          WANT: ${{ steps.gradle-pin.outputs.version }}
+        run: |
+          set -euo pipefail
+          HAVE="$(gradle --version 2>/dev/null | awk '/^Gradle /{print $2; exit}' || true)"
+          if [ "$HAVE" != "$WANT" ]; then
+            echo "::error::gradle on PATH ($(command -v gradle || echo none)) is '${HAVE:-missing}', the wrapper pins $WANT"
+            exit 1
+          fi
+          gradle :jvmTest --no-daemon --stacktrace
 
   # ---------------------------------------------------------------------------
   # Final gate — passes only if every binding agreed with the corpus AND the
