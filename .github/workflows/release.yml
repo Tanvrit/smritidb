@@ -188,7 +188,7 @@ jobs:
         # Trust-separated per-runner home (pr vs main namespaces), seeded from the
         # runner's warm cache on first use — see
         # tanvrit/artifactory/.github/actions/gradle-home.
-        uses: tanvrit/artifactory/.github/actions/gradle-home@main
+        uses: tanvrit/artifactory/.github/actions/gradle-home@c09641051fef26bbed748dadd4d831d72d7cea81  # main as of 2026-09-24 (artifactory #13); public repo that publishes: pinned by SHA
 
       - uses: gradle/actions/setup-gradle@v4
         with:
