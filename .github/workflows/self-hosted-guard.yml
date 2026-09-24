@@ -26,8 +26,16 @@ permissions:
   contents: read
 
 jobs:
+  # Fork-PR guard (2026-09-24): every job below runs on the self-hosted `tanvrit`
+  # fleet (the X64 hosts run jobs as root; the ARM64 node is a workstation), so
+  # a pull_request from a FORK must never execute on it. Each job carries the
+  # same-repo `if:` below; push/schedule/dispatch runs are unaffected. A fork
+  # PR therefore shows these checks as skipped, not passed: to test one, push
+  # its branch to this repo after review. Org-level approval for outside
+  # collaborators' fork-PR workflows is the first layer; this is the second.
   guard:
     name: No GitHub-hosted runners
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on:
       group: tanvrit
       labels: [self-hosted, Linux, X64]

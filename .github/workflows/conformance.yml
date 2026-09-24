@@ -30,6 +30,14 @@ env:
   RUST_BACKTRACE: "1"
 
 jobs:
+  # Fork-PR guard (2026-09-24): every job below runs on the self-hosted `tanvrit`
+  # fleet (the X64 hosts run jobs as root; the ARM64 node is a workstation), so
+  # a pull_request from a FORK must never execute on it. Each job carries the
+  # same-repo `if:` below; push/schedule/dispatch runs are unaffected. A fork
+  # PR therefore shows these checks as skipped, not passed: to test one, push
+  # its branch to this repo after review. Org-level approval for outside
+  # collaborators' fork-PR workflows is the first layer; this is the second.
+  #
   # Self-hosted only — org policy 2026-09-11: no workflow in any Tanvrit repo
   # may name a GitHub-hosted image. Every job below ran on `ubuntu-latest`
   # until then.
@@ -45,6 +53,7 @@ jobs:
   # ---------------------------------------------------------------------------
   fixture-parity:
     name: KMF fixture parity (TS emit -> cmp)
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on:
       group: tanvrit
       labels: [self-hosted, Linux, X64]
@@ -117,6 +126,7 @@ jobs:
   # ---------------------------------------------------------------------------
   ts-conformance:
     name: TypeScript — corpus tests
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on:
       group: tanvrit
       labels: [self-hosted, Linux, X64]
@@ -152,6 +162,7 @@ jobs:
   # ---------------------------------------------------------------------------
   rust-conformance:
     name: Rust — corpus + KMF cross-impl
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on:
       group: tanvrit
       labels: [self-hosted, Linux, X64]
@@ -195,6 +206,7 @@ jobs:
   # ---------------------------------------------------------------------------
   py-conformance:
     name: Python — corpus tests (via maturin)
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on:
       group: tanvrit
       labels: [self-hosted, Linux, X64]
@@ -268,6 +280,7 @@ jobs:
   # ---------------------------------------------------------------------------
   kmp-conformance:
     name: KMP JVM — corpus tests (via UniFFI)
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on:
       group: tanvrit
       labels: [self-hosted, Linux, X64]
@@ -363,6 +376,7 @@ jobs:
   # ---------------------------------------------------------------------------
   conformance-summary:
     name: Conformance summary (required check)
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on:
       group: tanvrit
       labels: [self-hosted, Linux, X64]
