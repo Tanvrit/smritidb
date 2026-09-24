@@ -10,19 +10,16 @@
 // library on first call without LD_LIBRARY_PATH gymnastics.
 
 plugins {
-    kotlin("jvm") version "2.1.20"
+    kotlin("jvm") version "2.4.20"
     application
 }
 
 kotlin {
+    // No languageVersion/apiVersion pin: this used to mirror the KMP
+    // project's 2.0 pin, which packages/smritidb-kmp dropped with the Kotlin
+    // 2.4.20 upgrade (its UniFFI bindings are patched; see its
+    // build.gradle.kts). Language 2.0 is deprecated on 2.4.
     jvmToolchain(17)
-    compilerOptions {
-        // UniFFI 0.28 emits a `message` property that clashes with
-        // `kotlin.Throwable.message` on Kotlin 2.1, so the upstream KMP
-        // project pins back to language 2.0 — we mirror that.
-        languageVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_0)
-        apiVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_0)
-    }
 }
 
 repositories {
