@@ -291,6 +291,12 @@ jobs:
       run:
         shell: bash
     steps:
+      # Per-runner, trust-separated Gradle home (see ci.yml's kmp-jvm): a
+      # pull_request build never writes a Gradle cache that a push-to-main,
+      # scheduled or dispatched build reads.
+      - name: Per-runner Gradle home
+        uses: tanvrit/artifactory/.github/actions/gradle-home@c09641051fef26bbed748dadd4d831d72d7cea81  # main as of 2026-09-24 (artifactory #13); public repo that publishes: pinned by SHA
+
       - uses: actions/checkout@v4
 
       - uses: actions/setup-java@v4

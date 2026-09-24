@@ -354,8 +354,10 @@ jobs:
   #
   # ARM64 runner rules: the GX10 runners are registrations of ONE user on one
   # workstation, each with its own persistent GRADLE_USER_HOME from the
-  # runner's .env — never override it (a workspace-local home is wiped by
-  # checkout and always cold) and never write into it; no Actions cache (on
+  # runner's .env. The first step is the shared gradle-home action, which
+  # splits that home by trust level (<home>-pr / <home>-main, CI cache
+  # poisoning, 2026-09-24); never point it at the workspace (wiped by checkout
+  # and always cold) and never write into it; no Actions cache (on
   # self-hosted it only adds transfer time); no sudo.
   # ---------------------------------------------------------------------------
   kmp-jvm:
@@ -369,6 +371,11 @@ jobs:
       run:
         shell: bash
     steps:
+      # Per-runner, trust-separated Gradle home: a pull_request build never
+      # writes a Gradle cache that a push-to-main build reads.
+      - name: Per-runner Gradle home
+        uses: tanvrit/artifactory/.github/actions/gradle-home@c09641051fef26bbed748dadd4d831d72d7cea81  # main as of 2026-09-24 (artifactory #13); public repo that publishes: pinned by SHA
+
       - uses: actions/checkout@v4
 
       - uses: actions/setup-java@v4
@@ -521,12 +528,11 @@ jobs:
           fi
           echo "version=$V" >> "$GITHUB_OUTPUT"
 
-      - name: Isolate GRADLE_USER_HOME per runner
-        run: |
-          GUH="$RUNNER_WORKSPACE/.gradle-home"
-          mkdir -p "$GUH"
-          echo "GRADLE_USER_HOME=$GUH" >> "$GITHUB_ENV"
-          echo "runner=$RUNNER_NAME host=$(hostname) GRADLE_USER_HOME=$GUH"
+      - name: Per-runner Gradle home
+        # Trust-separated per-runner home (pr vs main namespaces), seeded from the
+        # runner's warm cache on first use — see
+        # tanvrit/artifactory/.github/actions/gradle-home.
+        uses: tanvrit/artifactory/.github/actions/gradle-home@c09641051fef26bbed748dadd4d831d72d7cea81  # main as of 2026-09-24 (artifactory #13); public repo that publishes: pinned by SHA
 
       - uses: gradle/actions/setup-gradle@v4
         with:

@@ -184,19 +184,11 @@ jobs:
           mkdir -p target/release-jna/linux-x86-64
           cp target/release/libsmritidb_ffi.so target/release-jna/linux-x86-64/
 
-      # Persistent, per-runner Gradle home on the 593 GB pool (falls back
-      # under $HOME if the pool is not writable). Never the workspace: checkout
-      # wipes it.
-      - name: Per-runner GRADLE_USER_HOME
-        run: |
-          set -euo pipefail
-          GUH="/var/lib/vz/ci/gradle-home/$RUNNER_NAME"
-          if ! mkdir -p "$GUH" 2>/dev/null || [ ! -w "$GUH" ]; then
-            GUH="$HOME/.gradle-ci/$RUNNER_NAME"
-            mkdir -p "$GUH"
-          fi
-          echo "GRADLE_USER_HOME=$GUH" >> "$GITHUB_ENV"
-          echo "runner=$RUNNER_NAME host=$(hostname) GRADLE_USER_HOME=$GUH"
+      - name: Per-runner Gradle home
+        # Trust-separated per-runner home (pr vs main namespaces), seeded from the
+        # runner's warm cache on first use — see
+        # tanvrit/artifactory/.github/actions/gradle-home.
+        uses: tanvrit/artifactory/.github/actions/gradle-home@c09641051fef26bbed748dadd4d831d72d7cea81  # main as of 2026-09-24 (artifactory #13); public repo that publishes: pinned by SHA
 
       - uses: gradle/actions/setup-gradle@v4
         with:
