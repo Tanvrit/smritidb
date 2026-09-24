@@ -153,10 +153,16 @@ wasm-pack build --target web    --release            -- --no-default-features --
 wasm-pack build --target nodejs --release --out-dir pkg-node -- --no-default-features --features wasm
 
 cd ../smritidb-kmp
-gradle :compileKotlinJs     # Kotlin/JS — IR backend, consumes pkg-node/
-gradle :compileKotlinWasmJs # Kotlin/Wasm — consumes pkg/
-gradle :jsNodeTest          # runs the smoke tests under Node
+./gradlew :compileKotlinJs     # Kotlin/JS — IR backend, consumes pkg-node/
+./gradlew :compileKotlinWasmJs # Kotlin/Wasm — consumes pkg/
+./gradlew :jsNodeTest          # runs the smoke tests under Node
+./gradlew :wasmJsNodeTest      # same suite on Kotlin/Wasm
 ```
+
+The test npm dependencies are installed with npm, not Yarn
+(`kotlin.js.yarn=false` in `gradle.properties`): the Yarn 1.22.22 that
+Kotlin 2.4.20 ships refuses to run under the monorepo root's
+`"packageManager": "pnpm@…"`.
 
 `Cargo.toml` gates SQLite behind the `persist-sqlite` feature (default-on
 for native, off for wasm) so the wasm build does NOT pull `rusqlite` —
@@ -199,10 +205,7 @@ upgrade time but reserved for the Phase E append-only WAL — v1 is
 snapshot-only, which is enough for a first cut and matches the
 in-memory adapter's semantics from the Rust core.
 
-**Kotlin/Wasm note.** The `wasmJs` target keeps the memory-only
-adapter; the IDB wiring lives in Phase E alongside re-enabling the
-`wasmJsNodeTest` runner (still gated on Node 22.1+ in gradle's pinned
-toolchain). Kotlin/Wasm JS interop ferries `ByteArray`s as hex strings
+**Kotlin/Wasm note.** Kotlin/Wasm JS interop ferries `ByteArray`s as hex strings
 which is wasteful for a 10 kB snapshot — Phase E migrates the bridge
 to an `ArrayBuffer` round-trip and clones the `IndexedDbAdapter` shape
 verbatim.
@@ -215,14 +218,12 @@ imports nothing — it uses the browser-native `indexedDB` global.
 flag default; Rust 1.95's LLVM emits bulk-memory ops unconditionally.
 `Cargo.toml` opts out with `[package.metadata.wasm-pack.profile.release] wasm-opt = false`.
 
-The Kotlin/Wasm Node test runner is currently pinned to Node 22.0.0
-(gradle-managed) which lacks `process.getBuiltinModule` (Node 22.1+);
-without it `@JsFun` closures cannot resolve a synchronous `require()`
-to load the wasm bundle. We mark `wasmJsNodeTest` / `wasmJsBrowserTest`
-disabled in `build.gradle.kts` — the **compile + link** path is fully
-verified (`compileKotlinWasmJs` is green and emits a runnable `.wasm`),
-and the runtime test execution lands alongside the Phase D browser-storage
-work.
+The Kotlin/Wasm Node test runner needs `process.getBuiltinModule`
+(Node 22.1+): without it `@JsFun` closures cannot resolve a synchronous
+`require()` to load the wasm bundle. The gradle-managed Node that Kotlin
+2.4.20 provisions by default (24.16.0 for `js`, 26.2.0 for `wasmJs`)
+clears that floor, so `wasmJsNodeTest` runs; only `wasmJsBrowserTest`
+stays disabled in `build.gradle.kts`.
 
 ## Docs
 
@@ -232,7 +233,7 @@ work.
 
 ## Tests
 
-**78+ tests passing** across the live targets. JVM 12, macosArm64 14, linuxX64 15, linuxArm64 15, jsNode 22. Android Native and WasmJs Node compile + link green; their test runners are wired but disabled (Android needs an emulator; Kotlin/Wasm needs Node 22.1+).
+**100+ tests passing** across the live targets. Kotlin 2.4.20 / Gradle 9.7.1, verified 2026-09-24: JVM 13, macosArm64 14, jsNode 22, wasmJsNode 22. Earlier toolchain: linuxX64 15, linuxArm64 15 (under Docker). Android Native compiles + links; its test runner needs an emulator.
 
 ## Status
 
@@ -240,7 +241,7 @@ work.
 - JVM `actual` complete (`src/jvmMain`) — delegates to UniFFI. **12 tests passing.**
 - Kotlin/Native `actual` complete (`src/ffiNativeMain`) — hand-rolled UniFFI lift/lower against the C ABI in `smritidbFFI.h`; shared across Apple (macOS + iOS), Android Native, and Linux Native targets. **macosArm64: 14 tests passing; linuxX64 + linuxArm64: 15 tests each under Docker.**
 - Kotlin/JS `actual` complete (`src/jsMain`) — delegates to `wasm-bindgen` via `@JsModule("smritidb-core")`. **22 tests passing under jsNodeTest** (Phase D adds the IndexedDB adapter; 3 new smoke tests in `IndexedDbAdapterTest`).
-- Kotlin/Wasm `actual` compile + link green (`src/wasmJsMain`); test execution gated on Node 22.1+ in the gradle test runner (see "JS / WasmJs" above). IndexedDB adapter is JS-only for now — the Kotlin/Wasm port lands in Phase E.
+- Kotlin/Wasm `actual` complete (`src/wasmJsMain`). **22 tests passing under wasmJsNodeTest** (see "JS / WasmJs" above). IndexedDB adapter is JS-only for now — the Kotlin/Wasm port lands in Phase E.
 - Common tests use `kotlin.test` and run on each target's runtime; Android Native test execution requires an emulator / device, Linux Native execution needs docker / qemu on a Mac host.
 
 ## License

@@ -10,7 +10,7 @@
 #   - rust-ffi         — packages/smritidb-ffi   — 6  tests
 #   - rust-c-abi       — packages/smritidb-c     — 2  tests + C smoke
 #   - python           — packages/smritidb-py    — 21 tests (maturin + pytest)
-#   - kmp-jvm          — packages/smritidb-kmp   — 13 tests (Gradle :jvmTest)
+#   - kmp-jvm          — packages/smritidb-kmp   — 13 tests (Gradle :jvmTest, Linux ARM64)
 #   - typescript       — packages/core-ts        — 73 tests
 #   - conformance-gate — re-emits KMF + diffs    — depends on rust-core + typescript
 #   - notebooks        — Phase 0 notebook smoke  — kept from previous CI
@@ -340,20 +340,34 @@ jobs:
           if-no-files-found: ignore
 
   # ---------------------------------------------------------------------------
-  # KMP — JVM target only on CI for now. Apple targets run on the self-hosted
-  # mac fleet in the kmp-apple job below. Other targets (Android Native, Linux, JS, WasmJs)
-  # are declared in build.gradle.kts but are not yet implemented end-to-end;
-  # they are deferred until a real `actual` exists. The JVM target uses the
-  # UniFFI-generated Kotlin loading libsmritidb_ffi.so via JNA, so we have to
-  # build the FFI cdylib first and stage it under target/release-jna.
+  # KMP — JVM target only on Linux CI for now. Apple targets run on the
+  # self-hosted mac fleet in the kmp-apple job below. Other targets (Android
+  # Native, Linux, JS, WasmJs) are declared in build.gradle.kts but are not in
+  # CI yet. The JVM target uses the UniFFI-generated Kotlin loading
+  # libsmritidb_ffi.so via JNA, so the job builds the FFI cdylib for its OWN
+  # architecture and stages it under target/release-jna/<jna-platform>/.
+  #
+  # Linux ARM64 (fleet rule 2026-09-23: every JVM test runs on the GX10
+  # runners). The job builds its own cdylib, so it takes nothing from rust-ffi
+  # (whose upload is a linux-x86-64 .so that JNA could not load here anyway)
+  # and does not wait for it: it starts at t=0, in parallel with the X64 jobs.
+  #
+  # ARM64 runner rules: the GX10 runners are registrations of ONE user on one
+  # workstation, each with its own persistent GRADLE_USER_HOME from the
+  # runner's .env — never override it (a workspace-local home is wiped by
+  # checkout and always cold) and never write into it; no Actions cache (on
+  # self-hosted it only adds transfer time); no sudo.
   # ---------------------------------------------------------------------------
   kmp-jvm:
     name: KMP JVM (gradle :jvmTest)
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on:
       group: tanvrit
-      labels: [self-hosted, Linux, X64]
-    needs: rust-ffi
+      labels: [self-hosted, Linux, ARM64]
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@v4
 
@@ -362,110 +376,91 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - uses: dtolnay/rust-toolchain@stable
+      # Rust homes per runner registration. The GX10 runners share one $HOME,
+      # so dtolnay/rust-toolchain's defaults (~/.rustup, ~/.cargo) would have
+      # concurrent jobs racing one toolchain install, and its `rustup default
+      # stable` would rewrite the workstation owner's own default toolchain.
+      # The tool cache belongs to one registration and survives between its
+      # jobs, so the toolchain downloads once per runner (the action honours a
+      # preset CARGO_HOME; rustup honours RUSTUP_HOME). CARGO_TARGET_DIR sits
+      # beside the checkout rather than in it: checkout's clean would make
+      # every cdylib build cold.
+      - name: Per-runner Rust homes
+        run: |
+          set -euo pipefail
+          # Keyed by runner name too, in case a host shares one tool cache.
+          RUST_DIR="$RUNNER_TOOL_CACHE/rust-$RUNNER_NAME"
+          mkdir -p "$RUST_DIR/cargo/bin" "$RUST_DIR/rustup"
+          {
+            echo "CARGO_HOME=$RUST_DIR/cargo"
+            echo "RUSTUP_HOME=$RUST_DIR/rustup"
+            echo "CARGO_TARGET_DIR=$RUNNER_WORKSPACE/.cargo-target/smritidb-ffi"
+          } >> "$GITHUB_ENV"
+          echo "$RUST_DIR/cargo/bin" >> "$GITHUB_PATH"
+          echo "runner=$RUNNER_NAME host=$(hostname) arch=$(uname -m) rust_dir=$RUST_DIR"
 
-      - uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            packages/smritidb-ffi/target/
-          key: cargo-ffi-${{ runner.os }}-${{ hashFiles('packages/smritidb-ffi/Cargo.lock', 'packages/smritidb-ffi/Cargo.toml', 'packages/core-rs/Cargo.toml') }}
-          restore-keys: |
-            cargo-ffi-${{ runner.os }}-
+      - uses: dtolnay/rust-toolchain@stable
 
       - name: Build FFI cdylib (libsmritidb_ffi.so)
         working-directory: packages/smritidb-ffi
         run: cargo build --release
 
-      - name: Stage cdylib for JNA (linux-x86-64)
+      # JNA resolves a bundled native library under <os>-<arch>/ on the
+      # classpath: linux-aarch64 on these runners, linux-x86-64 on X64.
+      - name: Stage cdylib for JNA
         working-directory: packages/smritidb-ffi
         run: |
-          mkdir -p target/release-jna/linux-x86-64
-          cp target/release/libsmritidb_ffi.so target/release-jna/linux-x86-64/
-
-      # Gradle is pinned in exactly one place: the wrapper committed under
-      # packages/smritidb-kmp (gradle/wrapper/gradle-wrapper.properties;
-      # 8.12.1, the newest Gradle that Kotlin 2.1.20 fully supports). This job
-      # died with "gradle: command not found", exit 127 (job 103168253804):
-      # setup-gradle had no `gradle-version`, so it installed nothing and the
-      # step ran whatever `gradle` the host had — none on the Linux fleet,
-      # Homebrew's 9.3.1 on the MacBook, which is the only reason kmp-apple was
-      # green (job 103168105911 logs docs.gradle.org/9.3.1).
-      #
-      # CI provisions EXACTLY the wrapper's version through setup-gradle, which
-      # downloads over Node's HTTP stack, instead of running ./gradlew: the
-      # wrapper's own JVM-side download was measured timing out against
-      # services.gradle.org on three of this runner group's Macs on 2026-09-10
-      # while curl fetched the same URL in 0.2s (recorded in Tanvrit/ai
-      # ci.yml). kmp-apple lands on those Macs, and one provisioning path for
-      # all three KMP jobs beats a per-OS special case. The version is asserted
-      # before the build, so a mismatch fails loudly rather than building with
-      # some other Gradle.
-      - name: Read the Gradle version the wrapper pins
-        id: gradle-pin
-        run: |
           set -euo pipefail
-          V="$(sed -n 's#^distributionUrl=.*/gradle-\([0-9][0-9.]*\)-bin\.zip$#\1#p' packages/smritidb-kmp/gradle/wrapper/gradle-wrapper.properties)"
-          if [ -z "$V" ]; then
-            echo "::error::no -bin distributionUrl in packages/smritidb-kmp/gradle/wrapper/gradle-wrapper.properties"
-            exit 1
-          fi
-          echo "version=$V" >> "$GITHUB_OUTPUT"
+          case "$(uname -m)" in
+            aarch64|arm64) JNA_PLATFORM=linux-aarch64 ;;
+            x86_64|amd64) JNA_PLATFORM=linux-x86-64 ;;
+            *) echo "::error::no JNA platform directory for $(uname -m)"; exit 1 ;;
+          esac
+          mkdir -p "target/release-jna/$JNA_PLATFORM"
+          cp "$CARGO_TARGET_DIR/release/libsmritidb_ffi.so" "target/release-jna/$JNA_PLATFORM/"
+          ls -l "target/release-jna/$JNA_PLATFORM/"
 
-      # GRADLE_USER_HOME per runner registration, not the host's /root/.gradle
-      # (job 103168253804: "Gradle User Home already exists at /root/.gradle").
-      # That home is shared by every runner process on the host, and concurrent
-      # --no-daemon builds sharing it were measured losing artifact-transform
-      # files mid-build (Tanvrit/ai ci.yml, run 34520698537). RUNNER_WORKSPACE
-      # (<runner>/_work/<repo>) belongs to one registration, which runs one job
-      # at a time, and actions/checkout's clean does not reach it, so the home
-      # stays warm between that runner's jobs.
-      - name: Isolate GRADLE_USER_HOME per runner
-        run: |
-          GUH="$RUNNER_WORKSPACE/.gradle-home"
-          mkdir -p "$GUH"
-          echo "GRADLE_USER_HOME=$GUH" >> "$GITHUB_ENV"
-          echo "runner=$RUNNER_NAME host=$(hostname) GRADLE_USER_HOME=$GUH"
-
+      # Gradle is the wrapper's: packages/smritidb-kmp/gradle/wrapper pins
+      # 9.7.1 with its distributionSha256Sum, and ./gradlew fetches it into the
+      # runner's persistent Gradle home, so it downloads once per runner.
+      # (kmp-apple provisions the same version through setup-gradle instead,
+      # because the wrapper's own download timed out on the Macs — see there.)
+      # setup-gradle stays here for its build summary, with its cache off.
       - uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: ${{ steps.gradle-pin.outputs.version }}
-          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+          cache-disabled: true
 
       - name: Run :jvmTest
         working-directory: packages/smritidb-kmp
-        env:
-          WANT: ${{ steps.gradle-pin.outputs.version }}
-        run: |
-          set -euo pipefail
-          HAVE="$(gradle --version 2>/dev/null | awk '/^Gradle /{print $2; exit}' || true)"
-          if [ "$HAVE" != "$WANT" ]; then
-            echo "::error::gradle on PATH ($(command -v gradle || echo none)) is '${HAVE:-missing}', the wrapper pins $WANT"
-            exit 1
-          fi
-          gradle :jvmTest --no-daemon --stacktrace
+        run: ./gradlew :jvmTest --no-daemon --stacktrace
 
+      # Diagnostic only. The org's Actions storage quota has been exhausted
+      # (2026-09-24), so an upload must never be able to turn this job red.
       - name: Upload test reports on failure
         if: failure()
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: kmp-jvm-test-reports
           path: packages/smritidb-kmp/build/reports/tests/
           if-no-files-found: ignore
+          retention-days: 3
 
   # ---------------------------------------------------------------------------
   # KMP Apple — macOS-only, on the self-hosted mac fleet. For now this is a
   # thin compile check: build the static lib + run jvmTest as a smoke. Per-target
   # Cinterop wiring lands when an Apple `actual` ships.
+  #
+  # ARM64 is in the label set because the job builds and stages a
+  # darwin-aarch64 dylib: on the Intel `macmini` runner (also `macOS`, no
+  # Xcode) JNA could not load it. The label keeps it on the M2 MacBook.
   # ---------------------------------------------------------------------------
   kmp-apple:
     name: KMP Apple (macOS, smoke)
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on:
       group: tanvrit
-      labels: [self-hosted, macOS]
+      labels: [self-hosted, macOS, ARM64]
     needs: rust-core
     steps:
       - uses: actions/checkout@v4
@@ -500,9 +495,19 @@ jobs:
           mkdir -p target/release-jna/darwin-aarch64
           cp target/aarch64-apple-darwin/release/libsmritidb_ffi.dylib target/release-jna/darwin-aarch64/
 
-      # Same Gradle provisioning as kmp-jvm — see the comments there. This job
-      # was green only because Homebrew's gradle 9.3.1 happened to be on the
-      # MacBook's PATH; it now gets the wrapper's version or fails saying so.
+      # Gradle is pinned in exactly one place: the wrapper committed under
+      # packages/smritidb-kmp (gradle/wrapper/gradle-wrapper.properties). This
+      # job was green only because Homebrew's gradle 9.3.1 happened to be on
+      # the MacBook's PATH; it now gets the wrapper's version or fails saying
+      # so. It provisions EXACTLY that version through setup-gradle, which
+      # downloads over Node's HTTP stack, instead of running ./gradlew: the
+      # wrapper's own JVM-side download was measured timing out against
+      # services.gradle.org on three of this runner group's Macs on 2026-09-10
+      # while curl fetched the same URL in 0.2s (recorded in Tanvrit/ai
+      # ci.yml). The Linux jobs (kmp-jvm, Conformance's kmp-conformance) run
+      # ./gradlew. The version is asserted before the build, so a mismatch
+      # fails loudly rather than building with some other Gradle.
+      #
       # The per-runner home matters here too: the MacBook runner built in its
       # login user's own ~/.gradle, and two runner processes share that machine.
       - name: Read the Gradle version the wrapper pins
@@ -541,13 +546,16 @@ jobs:
           fi
           gradle :jvmTest --no-daemon --stacktrace
 
+      # Diagnostic only; must never turn the job red (Actions storage quota).
       - name: Upload test reports on failure
         if: failure()
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: kmp-apple-test-reports
           path: packages/smritidb-kmp/build/reports/tests/
           if-no-files-found: ignore
+          retention-days: 3
 
   # ---------------------------------------------------------------------------
   # TypeScript reference — produces the conformance corpus and KMF fixture.

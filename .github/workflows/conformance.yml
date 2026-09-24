@@ -275,15 +275,21 @@ jobs:
 
   # ---------------------------------------------------------------------------
   # KMP JVM conformance — the JVM binding loads the UniFFI cdylib via JNA.
-  # Stages the cdylib under target/release-jna/linux-x86-64/ exactly like the
-  # main CI job, then runs :jvmTest.
+  # Builds the cdylib for its own architecture, stages it under
+  # target/release-jna/<jna-platform>/ exactly like ci.yml's kmp-jvm job, then
+  # runs :jvmTest. Linux ARM64 like kmp-jvm (every JVM test runs on the GX10
+  # runners); the reasoning for each step below is written out there.
   # ---------------------------------------------------------------------------
   kmp-conformance:
     name: KMP JVM — corpus tests (via UniFFI)
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on:
       group: tanvrit
-      labels: [self-hosted, Linux, X64]
+      labels: [self-hosted, Linux, ARM64]
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@v4
 
@@ -291,6 +297,24 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
+
+      # Per-runner Rust homes: the GX10 runners share one $HOME, so the
+      # defaults would race one toolchain install and rewrite the workstation
+      # owner's default toolchain. CARGO_TARGET_DIR stays warm beside the
+      # checkout. No Actions cache on ARM64. See ci.yml's kmp-jvm.
+      - name: Per-runner Rust homes
+        run: |
+          set -euo pipefail
+          # Keyed by runner name too, in case a host shares one tool cache.
+          RUST_DIR="$RUNNER_TOOL_CACHE/rust-$RUNNER_NAME"
+          mkdir -p "$RUST_DIR/cargo/bin" "$RUST_DIR/rustup"
+          {
+            echo "CARGO_HOME=$RUST_DIR/cargo"
+            echo "RUSTUP_HOME=$RUST_DIR/rustup"
+            echo "CARGO_TARGET_DIR=$RUNNER_WORKSPACE/.cargo-target/smritidb-ffi"
+          } >> "$GITHUB_ENV"
+          echo "$RUST_DIR/cargo/bin" >> "$GITHUB_PATH"
+          echo "runner=$RUNNER_NAME host=$(hostname) arch=$(uname -m) rust_dir=$RUST_DIR"
 
       # `stable`, not the MSRV floor. These jobs run `cargo test` / `cargo build`,
       # which compile DEV-dependencies too — and MSRV is a promise about the
@@ -307,17 +331,6 @@ jobs:
       # that actually verifies the promise.
       - uses: dtolnay/rust-toolchain@stable
 
-      - uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            packages/smritidb-ffi/target/
-          key: cargo-ffi-${{ runner.os }}-${{ hashFiles('packages/smritidb-ffi/Cargo.lock', 'packages/smritidb-ffi/Cargo.toml', 'packages/core-rs/Cargo.toml') }}
-          restore-keys: |
-            cargo-ffi-${{ runner.os }}-
-
       - name: Build FFI cdylib
         working-directory: packages/smritidb-ffi
         run: cargo build --release
@@ -325,49 +338,27 @@ jobs:
       - name: Stage cdylib for JNA
         working-directory: packages/smritidb-ffi
         run: |
-          mkdir -p target/release-jna/linux-x86-64
-          cp target/release/libsmritidb_ffi.so target/release-jna/linux-x86-64/
-
-      # Gradle is the wrapper's pinned version, provisioned by setup-gradle and
-      # asserted before use — never whatever `gradle` the host has, which here
-      # was none: "gradle: command not found", exit 127 (job 107180313297).
-      # Identical to ci.yml's kmp-jvm job, where the reasoning (why not
-      # ./gradlew, why a per-runner GRADLE_USER_HOME) is written out.
-      - name: Read the Gradle version the wrapper pins
-        id: gradle-pin
-        run: |
           set -euo pipefail
-          V="$(sed -n 's#^distributionUrl=.*/gradle-\([0-9][0-9.]*\)-bin\.zip$#\1#p' packages/smritidb-kmp/gradle/wrapper/gradle-wrapper.properties)"
-          if [ -z "$V" ]; then
-            echo "::error::no -bin distributionUrl in packages/smritidb-kmp/gradle/wrapper/gradle-wrapper.properties"
-            exit 1
-          fi
-          echo "version=$V" >> "$GITHUB_OUTPUT"
+          case "$(uname -m)" in
+            aarch64|arm64) JNA_PLATFORM=linux-aarch64 ;;
+            x86_64|amd64) JNA_PLATFORM=linux-x86-64 ;;
+            *) echo "::error::no JNA platform directory for $(uname -m)"; exit 1 ;;
+          esac
+          mkdir -p "target/release-jna/$JNA_PLATFORM"
+          cp "$CARGO_TARGET_DIR/release/libsmritidb_ffi.so" "target/release-jna/$JNA_PLATFORM/"
+          ls -l "target/release-jna/$JNA_PLATFORM/"
 
-      - name: Isolate GRADLE_USER_HOME per runner
-        run: |
-          GUH="$RUNNER_WORKSPACE/.gradle-home"
-          mkdir -p "$GUH"
-          echo "GRADLE_USER_HOME=$GUH" >> "$GITHUB_ENV"
-          echo "runner=$RUNNER_NAME host=$(hostname) GRADLE_USER_HOME=$GUH"
-
+      # Gradle is the wrapper's (9.7.1, sha256-pinned), fetched by ./gradlew
+      # into the runner's persistent Gradle home — never whatever `gradle` the
+      # host has, which here was none: "gradle: command not found", exit 127
+      # (job 107180313297).
       - uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: ${{ steps.gradle-pin.outputs.version }}
-          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+          cache-disabled: true
 
       - name: gradle :jvmTest
         working-directory: packages/smritidb-kmp
-        env:
-          WANT: ${{ steps.gradle-pin.outputs.version }}
-        run: |
-          set -euo pipefail
-          HAVE="$(gradle --version 2>/dev/null | awk '/^Gradle /{print $2; exit}' || true)"
-          if [ "$HAVE" != "$WANT" ]; then
-            echo "::error::gradle on PATH ($(command -v gradle || echo none)) is '${HAVE:-missing}', the wrapper pins $WANT"
-            exit 1
-          fi
-          gradle :jvmTest --no-daemon --stacktrace
+        run: ./gradlew :jvmTest --no-daemon --stacktrace
 
   # ---------------------------------------------------------------------------
   # Final gate — passes only if every binding agreed with the corpus AND the

@@ -8,42 +8,47 @@
 // Rust core in semantics.
 
 plugins {
-    kotlin("multiplatform") version "2.1.20"
+    kotlin("multiplatform") version "2.4.20"
     `maven-publish`
 }
 
 group = "com.tanvrit.smritidb"
 version = "0.1.0"
 
-// --- Pin gradle-managed Node to a version with `process.getBuiltinModule` ---
+// --- Gradle-managed Node: must have `process.getBuiltinModule` (22.1+) ---
 //
 // The Kotlin/Wasm test runner emits an ESM bundle whose `@JsFun` arrow
 // functions don't get a synchronous CommonJS `require()` in scope. The
 // wasm bootstrap (`wasmJsTest/.../Bootstrap.kt`) reaches the wasm-bindgen
 // Node module by calling `process.getBuiltinModule('node:module')` to get
-// `createRequire(...)` — which was added in Node 22.1.0. The KMP plugin
-// 2.1.20 defaults to Node 22.0.0, so we pin to 22.11.0 (current 22.x LTS)
-// via the Kotlin 2.1 `NodeJsEnvSpec` Gradle extension.
+// `createRequire(...)` — which was added in Node 22.1.0.
 //
-// Both `js` and `wasmJs` targets share a single `NodeJsEnvSpec`, so this
-// one knob covers `jsNodeTest` and `wasmJsNodeTest`.
-plugins.withType<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsPlugin> {
-    the<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsEnvSpec>().version.set("22.11.0")
-}
+// No explicit pin any more. KGP 2.1.20 defaulted to Node 22.0.0, so this
+// block used to pin `NodeJsEnvSpec` to 22.11.0. Since KGP 2.2 that spec
+// drives the `js` target only (`wasmJs` has its own `WasmNodeJsEnvSpec`,
+// which the old pin never reached), and KGP 2.4.20's defaults — Node
+// 24.16.0 for `js`, 26.2.0 for `wasmJs` — both clear the 22.1 floor, so
+// `jsNodeTest` and `wasmJsNodeTest` pass on the plugin defaults. The old
+// pin would only have held `js` behind. If a future KGP default ever drops
+// below 22.1, pin both specs here.
 
 kotlin {
     jvmToolchain(17)
 
-    // The UniFFI 0.28-generated Kotlin bindings emit a property named
-    // `message` on exception subclasses that shadows `kotlin.Exception.message`.
-    // Kotlin 2.1 surfaces this as an "overload resolution ambiguity" error
-    // (it was a silent warning in 2.0). Pin the language and API level back
-    // until UniFFI emits an `override val message`. Also opt in to
-    // `expect`/`actual` classes (KT-61573) which our `PersistentStore`
-    // surface uses.
+    // Opt in to `expect`/`actual` classes (KT-61573), which our
+    // `PersistentStore` surface uses.
+    //
+    // No languageVersion/apiVersion pin. Until 2026-09 both were pinned to
+    // 2.0 because the raw UniFFI 0.28 Kotlin declares `val message` on its
+    // exception subclasses, shadowing `kotlin.Throwable.message` — an
+    // "overload resolution ambiguity" error from Kotlin 2.1 on. The copy in
+    // `src/jvmMain/kotlin/uniffi/smritidb/smritidb.kt` is patched (`msg` +
+    // `override val message`), so the pin was no longer load-bearing, and on
+    // Kotlin 2.4 it became actively wrong: language 2.0 is deprecated, and
+    // API 2.0 fails `compileKotlinWasmJs` because `@JsFun` is
+    // `@SinceKotlin("2.2")` in the 2.4 wasm stdlib. If you regenerate the
+    // bindings, re-apply that patch (see the file header) — do not re-pin.
     compilerOptions {
-        languageVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_0)
-        apiVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_0)
         freeCompilerArgs.add("-Xexpect-actual-classes")
     }
 
@@ -78,7 +83,7 @@ kotlin {
     fun org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget.wireSmritidbFfi(rustTriple: String) {
         val libDir = rustFfiDir.resolve("target/$rustTriple/release")
         compilations.getByName("main").cinterops {
-            val smritidb_ffi by creating {
+            create("smritidb_ffi") {
                 defFile(project.file("src/nativeInterop/cinterop/smritidb_ffi.def"))
                 // Add the directory holding `smritidbFFI.h` to the C
                 // preprocessor's include path so the def file's
@@ -144,7 +149,7 @@ kotlin {
     // `openFile` throw `UnsupportedOperationException` because rusqlite
     // doesn't compile to `wasm32-unknown-unknown`. IndexedDB and
     // OPFS-sqlite-wasm adapters are tracked as Phase D.
-    js(IR) {
+    js {
         nodejs {
             testTask {
                 useMocha {
@@ -163,10 +168,10 @@ kotlin {
         binaries.executable()
     }
 
-    // Kotlin/Wasm Node tests run against gradle-managed Node 22.11.0
-    // (pinned above). The wasm bootstrap in `wasmJsTest/.../Bootstrap.kt`
-    // pulls in the wasm-bindgen Node bundle via `process.getBuiltinModule`
-    // (Node 22.1+), so the suite needs that pinned version to function.
+    // Kotlin/Wasm Node tests run against gradle-managed Node (the KGP
+    // default — see the note at the top of this file). The wasm bootstrap
+    // in `wasmJsTest/.../Bootstrap.kt` pulls in the wasm-bindgen Node
+    // bundle via `process.getBuiltinModule` (Node 22.1+).
     //
     // The browser variant (`wasmJsBrowserTest`) is still skipped — it
     // would need a wasm-pack browser bundle wired through karma, which
@@ -176,12 +181,12 @@ kotlin {
     }
 
     sourceSets {
-        val commonMain by getting {
+        val commonMain = getByName("commonMain") {
             dependencies {
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
             }
         }
-        val commonTest by getting {
+        val commonTest = getByName("commonTest") {
             dependencies {
                 implementation(kotlin("test-common"))
                 implementation(kotlin("test-annotations-common"))
@@ -192,7 +197,7 @@ kotlin {
             }
         }
 
-        val jvmMain by getting {
+        getByName("jvmMain") {
             // The UniFFI-generated Kotlin bindings live under
             // `src/jvmMain/kotlin/uniffi/smritidb/smritidb.kt` — copied from
             // `packages/smritidb-ffi/bindings/kotlin/` and locally patched for
@@ -211,7 +216,7 @@ kotlin {
             }
         }
 
-        val jvmTest by getting {
+        getByName("jvmTest") {
             dependencies {
                 implementation(kotlin("test-junit5"))
                 runtimeOnly("org.junit.jupiter:junit-jupiter-engine:5.10.2")
@@ -227,8 +232,8 @@ kotlin {
         // Cinterop klib is named the same on every target
         // (`smritidb_ffi`, via the shared .def file) so imports
         // resolve without per-target branching.
-        val ffiNativeMain by creating { dependsOn(commonMain) }
-        val ffiNativeTest by creating {
+        val ffiNativeMain = create("ffiNativeMain") { dependsOn(commonMain) }
+        val ffiNativeTest = create("ffiNativeTest") {
             dependsOn(commonTest)
             dependencies {
                 implementation(kotlin("test"))
@@ -248,7 +253,7 @@ kotlin {
         // `src/linuxTest/kotlin/` get picked up by both Linux native
         // test compilations. Apple and Android Native do not depend on
         // it.
-        val linuxTest by creating {
+        val linuxTest = create("linuxTest") {
             dependsOn(ffiNativeTest)
         }
         listOf("linuxX64", "linuxArm64").forEach { t ->
@@ -272,9 +277,9 @@ kotlin {
         // / PersistentStoreWasmJs.kt for `openSqlite` / `openFile`
         // throwing `UnsupportedOperationException`. IndexedDB and
         // OPFS-sqlite-wasm are Phase D.
-        val webMain by creating { dependsOn(commonMain) }
+        val webMain = create("webMain") { dependsOn(commonMain) }
 
-        val jsMain by getting {
+        getByName("jsMain") {
             dependsOn(webMain)
             dependencies {
                 // Pin to the local wasm-pack output. Re-runs of
@@ -283,7 +288,7 @@ kotlin {
                 implementation(npm("smritidb-core", File(projectDir, "../core-rs/pkg-node").absolutePath))
             }
         }
-        val jsTest by getting {
+        getByName("jsTest") {
             dependencies {
                 implementation(kotlin("test-js"))
                 // `fake-indexeddb` provides a Node-side polyfill for the
@@ -296,10 +301,16 @@ kotlin {
             }
         }
 
-        val wasmJsMain by getting {
+        // The wasmJs bridge IS JS interop (`@JsFun`, `JsAny`, `js(...)`),
+        // which Kotlin 2.2+ marks `@ExperimentalWasmJsInterop`. Opt in once
+        // per source set rather than annotating every declaration — without
+        // it the 2.4.20 compile emits ~50 opt-in warnings over these files.
+        getByName("wasmJsMain") {
             dependsOn(webMain)
+            languageSettings.optIn("kotlin.js.ExperimentalWasmJsInterop")
         }
-        val wasmJsTest by getting {
+        getByName("wasmJsTest") {
+            languageSettings.optIn("kotlin.js.ExperimentalWasmJsInterop")
             dependencies {
                 implementation(kotlin("test-wasm-js"))
                 // Same Node-side IDB polyfill as `jsTest`; the wasmJs
@@ -317,7 +328,7 @@ kotlin {
 // the `smritidb-core` NPM dependency. `wasmPackBuild` is a no-op when
 // the Rust sources haven't changed (cargo's incremental build handles
 // that), so wiring it up unconditionally costs nothing.
-val wasmPackBuildWeb by tasks.registering(Exec::class) {
+val wasmPackBuildWeb = tasks.register<Exec>("wasmPackBuildWeb") {
     description = "Build packages/core-rs as a wasm-bindgen package for the browser (ESM)."
     group = "build"
     workingDir = File(projectDir, "../core-rs")
@@ -334,7 +345,7 @@ val wasmPackBuildWeb by tasks.registering(Exec::class) {
     )
 }
 
-val wasmPackBuildNode by tasks.registering(Exec::class) {
+val wasmPackBuildNode = tasks.register<Exec>("wasmPackBuildNode") {
     description = "Build packages/core-rs as a wasm-bindgen package for Node (CommonJS)."
     group = "build"
     workingDir = File(projectDir, "../core-rs")
@@ -349,7 +360,7 @@ val wasmPackBuildNode by tasks.registering(Exec::class) {
     )
 }
 
-val wasmPackBuild by tasks.registering {
+tasks.register("wasmPackBuild") {
     description = "Builds both wasm-pack outputs consumed by jsMain / wasmJsMain."
     group = "build"
     dependsOn(wasmPackBuildWeb, wasmPackBuildNode)
