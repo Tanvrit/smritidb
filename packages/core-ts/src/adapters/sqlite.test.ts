@@ -307,22 +307,18 @@ describe("sqliteAdapter", () => {
  * once on this machine.
  */
 describe("sqliteAdapter (cross-binary compat with Rust)", () => {
-  const FIXTURE = "/tmp/smritidb-polyglot.db";
+  const FIXTURE = process.env.SMRITIDB_POLYGLOT_FIXTURE ?? "/tmp/smritidb-polyglot.db";
   const fixtureExists = existsSync(FIXTURE);
 
   it("reads a SQLite file produced by the Rust core via the polyglot demo", { skip: !fixtureExists }, async () => {
     // We need the real `better-sqlite3` here — the mockDb won't deserialise an
     // on-disk database. Dynamic import keeps this test optional in
     // environments where the native module isn't built.
-    let Database: { default: new (path: string, opts?: { readonly?: boolean }) => SqliteDatabase };
-    try {
-      Database = (await import("better-sqlite3")) as unknown as typeof Database;
-    } catch (e) {
-      // No native module available — skip rather than fail.
-      // (Node's test runner has no late-skip, so we just assert true.)
-      console.warn(`[sqlite.test] better-sqlite3 unavailable, skipping: ${(e as Error).message}`);
-      return;
-    }
+    // An explicitly available fixture requires the real native driver: import
+    // failures must not turn this compatibility check into a passing no-op.
+    const Database = (await import("better-sqlite3")) as unknown as {
+      default: new (path: string, opts?: { readonly?: boolean }) => SqliteDatabase;
+    };
     const handle = new Database.default(FIXTURE, { readonly: true });
     const adapter = sqliteAdapter(handle);
     const blob = await adapter.read();

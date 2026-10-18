@@ -2,13 +2,13 @@
   "name": "smritidb-monorepo",
   "version": "0.0.0",
   "private": true,
-  "description": "Smritidb — biology-inspired associative memory standard. Monorepo root.",
+  "description": "Smritidb \u2014 biology-inspired associative memory standard. Monorepo root.",
   "author": {
     "name": "Tanvrit Private Limited",
     "url": "https://tanvrit.com"
   },
   "license": "Apache-2.0",
-  "packageManager": "pnpm@9.12.0",
+  "packageManager": "pnpm@12.14.0",
   "engines": {
     "node": ">=22.0.0"
   },
@@ -20,11 +20,11 @@
     "dev": "pnpm --filter web dev"
   },
   "devDependencies": {
-    "@eslint/js": "^9",
-    "eslint": "^9",
-    "globals": "^15",
-    "typescript": "^5.6.0",
-    "typescript-eslint": "^8"
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.13.0",
+    "globals": "^17.13.0",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.71.2"
   },
   "repository": {
     "type": "git",

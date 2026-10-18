@@ -8,7 +8,7 @@
 // Rust core in semantics.
 
 plugins {
-    kotlin("multiplatform") version "2.4.20"
+    kotlin("multiplatform") version "2.4.21"
     `maven-publish`
 }
 
@@ -183,7 +183,7 @@ kotlin {
     sourceSets {
         val commonMain = getByName("commonMain") {
             dependencies {
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
             }
         }
         val commonTest = getByName("commonTest") {
@@ -193,7 +193,7 @@ kotlin {
                 // `runTest` powers the suspend-aware coroutine smoke tests
                 // (Phase D IndexedDB adapter on JS). The artifact is
                 // multiplatform; KMP picks the per-target variant.
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
             }
         }
 
@@ -201,10 +201,10 @@ kotlin {
             // The UniFFI-generated Kotlin bindings live under
             // `src/jvmMain/kotlin/uniffi/smritidb/smritidb.kt` — copied from
             // `packages/smritidb-ffi/bindings/kotlin/` and locally patched for
-            // Kotlin 2.x source compatibility (UniFFI 0.28 emits clashing
+            // Kotlin 2.x source compatibility (UniFFI 0.32 emits clashing
             // `close()` overrides and a `message` property that shadows
             // `kotlin.Throwable.message` without an `override` modifier).
-            // Regeneration steps live in `README.md`.
+            // Run scripts/prepare-kotlin-bindings.py after regeneration (see README.md).
             //
             // Bundle the native library produced by `cargo build` so consumers
             // of the published jar don't need to set java.library.path. JNA's
@@ -212,15 +212,15 @@ kotlin {
             resources.srcDir("../smritidb-ffi/target/release-jna")
             dependencies {
                 // The UniFFI-generated Kotlin uses JNA to load libsmritidb_ffi
-                implementation("net.java.dev.jna:jna:5.14.0")
+                implementation("net.java.dev.jna:jna:5.19.1")
             }
         }
 
         getByName("jvmTest") {
             dependencies {
                 implementation(kotlin("test-junit5"))
-                runtimeOnly("org.junit.jupiter:junit-jupiter-engine:5.10.2")
-                runtimeOnly("org.junit.platform:junit-platform-launcher:1.10.2")
+                runtimeOnly("org.junit.jupiter:junit-jupiter-engine:6.1.3")
+                runtimeOnly("org.junit.platform:junit-platform-launcher:6.1.3")
             }
         }
 
@@ -297,7 +297,7 @@ kotlin {
                 // `fake-indexeddb/auto` installs the globals; the actual
                 // adapter code does not depend on the package at runtime
                 // in production (it uses the browser's native indexedDB).
-                implementation(npm("fake-indexeddb", "6.0.0"))
+                implementation(npm("fake-indexeddb", "6.2.6"))
             }
         }
 
@@ -318,7 +318,7 @@ kotlin {
                 // production, but Node has no native `indexedDB` so we
                 // install it before each suite that exercises the
                 // adapter.
-                implementation(npm("fake-indexeddb", "6.0.0"))
+                implementation(npm("fake-indexeddb", "6.2.6"))
             }
         }
     }
@@ -405,4 +405,20 @@ publishing {
             }
         }
     }
+}
+
+// The C header is generated, not tracked. Produce the matching ABI before any
+// Native cinterop task, including a fresh checkout with no bindings directory.
+val generateNativeBindings = tasks.register<Exec>("generateNativeBindings") {
+    group = "build"
+    description = "Generate the native header with the pinned UniFFI version."
+    val ffiDir = projectDir.resolve("../smritidb-ffi")
+    workingDir = ffiDir
+    inputs.files(ffiDir.resolve("src/smritidb.udl"), ffiDir.resolve("Cargo.toml"), ffiDir.resolve("Cargo.lock"))
+    outputs.dir(ffiDir.resolve("bindings/swift"))
+    commandLine("cargo", "run", "--release", "--locked", "--bin", "uniffi-bindgen", "--",
+        "generate", "src/smritidb.udl", "--language", "swift", "--out-dir", "bindings/swift")
+}
+tasks.matching { it.name.startsWith("cinteropSmritidb_ffi") }.configureEach {
+    dependsOn(generateNativeBindings)
 }

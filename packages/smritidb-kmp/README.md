@@ -247,3 +247,16 @@ stays disabled in `build.gradle.kts`.
 ## License
 
 Apache-2.0.
+
+### Regenerating the JVM binding
+
+After the Kotlin `uniffi-bindgen generate` command above, run from the repository root:
+
+```sh
+python3 scripts/prepare-kotlin-bindings.py
+```
+
+This copies the generated Kotlin into the committed JVM source while preserving
+its idempotent `AutoCloseable.close()` and exception payload compatibility fixes.
+Native cinterop tasks generate their matching C header automatically with the
+UniFFI version pinned in `packages/smritidb-ffi/Cargo.lock`.

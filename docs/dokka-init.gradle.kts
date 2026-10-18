@@ -20,7 +20,7 @@ initscript {
         mavenCentral()
     }
     dependencies {
-        classpath("org.jetbrains.dokka:dokka-gradle-plugin:1.9.20")
+        classpath("org.jetbrains.dokka:dokka-gradle-plugin:2.2.0")
     }
 }
 

@@ -2,7 +2,7 @@
 name = "smritidb-py"
 version = "0.1.0"
 edition = "2021"
-rust-version = "1.75"
+rust-version = "1.89"
 license = "Apache-2.0"
 description = "Smritidb Python bindings — pyo3 wrapper over the Rust core."
 authors = ["Tanvrit Private Limited <ervivek40@gmail.com>"]
@@ -19,6 +19,6 @@ name = "_native"
 crate-type = ["cdylib"]
 
 [dependencies]
-pyo3 = { version = "0.22", features = ["extension-module", "abi3-py39"] }
+pyo3 = { version = "0.30.1", features = ["extension-module", "abi3-py39"] }
 smritidb-core = { path = "../core-rs", version = "0.1.0", default-features = true }
-serde_json = { version = "1", features = ["preserve_order"] }
+serde_json = { version = "1.0.154", features = ["preserve_order"] }

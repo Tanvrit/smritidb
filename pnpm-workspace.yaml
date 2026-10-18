@@ -4,3 +4,9 @@ packages:
   - "examples/*"
   - "benchmarks"
   - "benchmarks/typescript"
+
+# Native SDK tests and the web compiler need these installation builds.
+allowBuilds:
+  better-sqlite3: true
+  esbuild: true
+  sharp: true

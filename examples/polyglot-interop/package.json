@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "@tanvrit/smritidb": "file:../../packages/core-ts",
-    "better-sqlite3": "^12.10.0",
-    "tsx": "^4.19.0"
+    "better-sqlite3": "^13.0.3",
+    "tsx": "^4.23.15"
   }
 }

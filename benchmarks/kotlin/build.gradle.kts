@@ -12,7 +12,7 @@
 // 5-second JIT warmup is hand-coded in Benchmarks.kt.
 
 plugins {
-    kotlin("jvm") version "2.4.20"
+    kotlin("jvm") version "2.4.21"
     application
 }
 
@@ -27,11 +27,11 @@ dependencies {
     // smritidb-kmp's JVM publication depends on JNA + kotlinx-coroutines.
     // We pull them in directly since we're consuming a fat jar rather than
     // a published POM.
-    implementation("net.java.dev.jna:jna:5.14.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
+    implementation("net.java.dev.jna:jna:5.19.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
     // Pin the same Kotlin stdlib version smritidb-kmp was compiled against
     // to avoid the runtime warning the launcher otherwise emits.
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:2.4.20")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:2.4.21")
 }
 
 application {

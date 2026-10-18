@@ -22,7 +22,7 @@ const DEFAULT_MIN_SIM: f64 = 0.5;
 #[pyfunction]
 #[pyo3(name = "random_hv")]
 fn py_random_hv<'py>(py: Python<'py>, seed: &[u8], dim: usize) -> Bound<'py, PyBytes> {
-    PyBytes::new_bound(py, &core::random_hv(seed, dim))
+    PyBytes::new(py, &core::random_hv(seed, dim))
 }
 
 #[pyfunction]
@@ -44,7 +44,7 @@ fn py_bind<'py>(py: Python<'py>, a: &[u8], b: &[u8]) -> PyResult<Bound<'py, PyBy
     if a.len() != b.len() {
         return Err(PyValueError::new_err("dimension mismatch in bind"));
     }
-    Ok(PyBytes::new_bound(py, &core::bind(a, b)))
+    Ok(PyBytes::new(py, &core::bind(a, b)))
 }
 
 #[pyfunction]
@@ -62,19 +62,19 @@ fn py_bundle<'py>(py: Python<'py>, hvs: Vec<Vec<u8>>) -> PyResult<Bound<'py, PyB
         ));
     }
     let refs: Vec<&core::Hypervector> = hvs.iter().collect();
-    Ok(PyBytes::new_bound(py, &core::bundle(&refs)))
+    Ok(PyBytes::new(py, &core::bundle(&refs)))
 }
 
 #[pyfunction]
 #[pyo3(name = "permute")]
 fn py_permute<'py>(py: Python<'py>, hv: &[u8], k: i32) -> Bound<'py, PyBytes> {
-    PyBytes::new_bound(py, &core::permute(hv, k))
+    PyBytes::new(py, &core::permute(hv, k))
 }
 
 #[pyfunction]
 #[pyo3(name = "encode_string")]
 fn py_encode_string<'py>(py: Python<'py>, s: &str, dim: usize) -> Bound<'py, PyBytes> {
-    PyBytes::new_bound(py, &core::encode_string(s, dim))
+    PyBytes::new(py, &core::encode_string(s, dim))
 }
 
 #[pyfunction]
@@ -84,7 +84,7 @@ fn py_encode_embedding<'py>(
     embedding: Vec<f32>,
     dim: usize,
 ) -> Bound<'py, PyBytes> {
-    PyBytes::new_bound(py, &core::encode_embedding(&embedding, dim))
+    PyBytes::new(py, &core::encode_embedding(&embedding, dim))
 }
 
 // ---- Store class — SPEC §3 surface ----
@@ -131,8 +131,8 @@ impl Store {
     #[pyo3(signature = (key, value, id = None, tags = None))]
     fn put(
         &mut self,
-        key: PyObject,
-        value: PyObject,
+        key: Py<PyAny>,
+        value: Py<PyAny>,
         id: Option<String>,
         tags: Option<Vec<String>>,
         py: Python<'_>,
@@ -164,7 +164,7 @@ impl Store {
     fn recall<'py>(
         &mut self,
         py: Python<'py>,
-        cue: PyObject,
+        cue: Py<PyAny>,
         top_k: Option<usize>,
         min_similarity: Option<f64>,
     ) -> PyResult<Vec<Bound<'py, PyDict>>> {
@@ -193,10 +193,10 @@ impl Store {
                 item.last_accessed_at = now;
             }
             let item = &self.items[&id];
-            let d = PyDict::new_bound(py);
+            let d = PyDict::new(py);
             d.set_item("id", item.id.clone())?;
             d.set_item("similarity", sim)?;
-            d.set_item("value", PyBytes::new_bound(py, &item.value))?;
+            d.set_item("value", PyBytes::new(py, &item.value))?;
             d.set_item("tags", item.tags.clone())?;
             d.set_item("access_count", item.access_count)?;
             out.push(d);
@@ -213,9 +213,9 @@ impl Store {
             .items
             .get(&id)
             .ok_or_else(|| PyKeyError::new_err(format!("item {id} not found")))?;
-        let d = PyDict::new_bound(py);
+        let d = PyDict::new(py);
         d.set_item("id", item.id.clone())?;
-        d.set_item("value", PyBytes::new_bound(py, &item.value))?;
+        d.set_item("value", PyBytes::new(py, &item.value))?;
         d.set_item("tags", item.tags.clone())?;
         d.set_item("created_at", item.created_at)?;
         d.set_item("access_count", item.access_count)?;
@@ -353,11 +353,11 @@ impl PyPersistentStore {
     fn put(
         &self,
         py: Python<'_>,
-        key: PyObject,
-        value: PyObject,
+        key: Py<PyAny>,
+        value: Py<PyAny>,
         id: Option<String>,
         tags: Option<Vec<String>>,
-        metadata: Option<PyObject>,
+        metadata: Option<Py<PyAny>>,
     ) -> PyResult<String> {
         let dim = self.dimension;
         let hv = to_hypervector(py, key, dim)?;
@@ -380,7 +380,7 @@ impl PyPersistentStore {
     fn recall<'py>(
         &self,
         py: Python<'py>,
-        cue: PyObject,
+        cue: Py<PyAny>,
         top_k: Option<usize>,
         min_similarity: Option<f64>,
     ) -> PyResult<Vec<Bound<'py, PyDict>>> {
@@ -391,10 +391,10 @@ impl PyPersistentStore {
             let hits = store.recall(&cue_hv, k, min_sim);
             let mut out = Vec::with_capacity(hits.len());
             for m in hits {
-                let d = PyDict::new_bound(py);
+                let d = PyDict::new(py);
                 d.set_item("id", m.item.id.clone())?;
                 d.set_item("similarity", m.similarity)?;
-                d.set_item("value", PyBytes::new_bound(py, &m.item.value))?;
+                d.set_item("value", PyBytes::new(py, &m.item.value))?;
                 d.set_item("tags", m.item.tags.clone())?;
                 d.set_item("access_count", m.item.access_count)?;
                 out.push(d);
@@ -412,9 +412,9 @@ impl PyPersistentStore {
     fn get<'py>(&self, py: Python<'py>, id: String) -> PyResult<Option<Bound<'py, PyDict>>> {
         self.with_store(|store| match store.get(&id) {
             Ok(item) => {
-                let d = PyDict::new_bound(py);
+                let d = PyDict::new(py);
                 d.set_item("id", item.id.clone())?;
-                d.set_item("value", PyBytes::new_bound(py, &item.value))?;
+                d.set_item("value", PyBytes::new(py, &item.value))?;
                 d.set_item("tags", item.tags.clone())?;
                 d.set_item("created_at", item.created_at)?;
                 d.set_item("access_count", item.access_count)?;
@@ -445,7 +445,7 @@ impl PyPersistentStore {
     fn consolidate<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyDict>> {
         self.with_store(|store| {
             let report = store.consolidate(None);
-            let d = PyDict::new_bound(py);
+            let d = PyDict::new(py);
             d.set_item("pairs_pulled", report.pairs_pulled)?;
             d.set_item("bits_flipped", report.bits_flipped)?;
             d.set_item("cold_items_flagged", report.cold_items_flagged)?;
@@ -497,9 +497,9 @@ impl PyPersistentStore {
     #[pyo3(signature = (exc_type = None, exc_value = None, traceback = None))]
     fn __exit__(
         &self,
-        exc_type: Option<PyObject>,
-        exc_value: Option<PyObject>,
-        traceback: Option<PyObject>,
+        exc_type: Option<Py<PyAny>>,
+        exc_value: Option<Py<PyAny>>,
+        traceback: Option<Py<PyAny>>,
     ) -> PyResult<bool> {
         let _ = (exc_type, exc_value, traceback);
         self.close()?;
@@ -509,11 +509,11 @@ impl PyPersistentStore {
 
 // ---- helpers ----
 
-fn to_hypervector(py: Python<'_>, obj: PyObject, dim: usize) -> PyResult<Vec<u8>> {
+fn to_hypervector(py: Python<'_>, obj: Py<PyAny>, dim: usize) -> PyResult<Vec<u8>> {
     if let Ok(s) = obj.extract::<String>(py) {
         return Ok(core::encode_string(&s, dim));
     }
-    if let Ok(b) = obj.downcast_bound::<PyBytes>(py) {
+    if let Ok(b) = obj.cast_bound::<PyBytes>(py) {
         let v = b.as_bytes().to_vec();
         if v.len() != dim {
             return Err(PyValueError::new_err(format!(
@@ -532,11 +532,11 @@ fn to_hypervector(py: Python<'_>, obj: PyObject, dim: usize) -> PyResult<Vec<u8>
     ))
 }
 
-fn to_value_bytes(py: Python<'_>, obj: PyObject) -> PyResult<Vec<u8>> {
+fn to_value_bytes(py: Python<'_>, obj: Py<PyAny>) -> PyResult<Vec<u8>> {
     if let Ok(s) = obj.extract::<String>(py) {
         return Ok(s.into_bytes());
     }
-    if let Ok(b) = obj.downcast_bound::<PyBytes>(py) {
+    if let Ok(b) = obj.cast_bound::<PyBytes>(py) {
         return Ok(b.as_bytes().to_vec());
     }
     if let Ok(v) = obj.extract::<Vec<u8>>(py) {
@@ -551,11 +551,11 @@ fn to_value_bytes(py: Python<'_>, obj: PyObject) -> PyResult<Vec<u8>> {
 /// tripping through the standard library `json` module so we accept anything
 /// Python's own `json.dumps` would accept (dicts, lists, primitives). Returning
 /// `Null` for `None` keeps parity with the TS reference.
-fn py_to_json(py: Python<'_>, obj: PyObject) -> PyResult<serde_json::Value> {
+fn py_to_json(py: Python<'_>, obj: Py<PyAny>) -> PyResult<serde_json::Value> {
     if obj.is_none(py) {
         return Ok(serde_json::Value::Null);
     }
-    let json_mod = py.import_bound("json")?;
+    let json_mod = py.import("json")?;
     let s: String = json_mod.call_method1("dumps", (obj,))?.extract()?;
     serde_json::from_str(&s)
         .map_err(|e| PyValueError::new_err(format!("metadata must be JSON-serialisable: {e}")))
@@ -583,8 +583,8 @@ fn _native(py: Python<'_>, m: &Bound<PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_encode_embedding, m)?)?;
     m.add_class::<Store>()?;
     m.add_class::<PyPersistentStore>()?;
-    m.add("SmritidbError", py.get_type_bound::<SmritidbError>())?;
-    m.add("PersistenceError", py.get_type_bound::<PersistenceError>())?;
-    m.add("StoreError", py.get_type_bound::<StoreError>())?;
+    m.add("SmritidbError", py.get_type::<SmritidbError>())?;
+    m.add("PersistenceError", py.get_type::<PersistenceError>())?;
+    m.add("StoreError", py.get_type::<StoreError>())?;
     Ok(())
 }

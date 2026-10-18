@@ -11,7 +11,7 @@ documentation = "https://docs.rs/smritidb-core"
 readme = "README.md"
 keywords = ["hyperdimensional", "associative-memory", "vector-database", "binary-hdc", "kanerva"]
 categories = ["data-structures", "database"]
-rust-version = "1.75"
+rust-version = "1.89"
 
 [package.metadata.docs.rs]
 all-features = true
@@ -21,43 +21,43 @@ rustdoc-args = ["--cfg", "docsrs"]
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-blake3 = { version = "1.5", default-features = false, features = ["pure"] }
-serde = { version = "1", features = ["derive"] }
+blake3 = { version = "1.8.7", default-features = false, features = ["pure"] }
+serde = { version = "1.0.229", features = ["derive"] }
 # `preserve_order` is required so JSON objects round-trip in insertion order —
 # the KMF wire format is JSON-encoded and must be byte-identical with the
 # TypeScript reference, which inherits JS's insertion-order semantics.
-serde_json = { version = "1", features = ["preserve_order"] }
-thiserror = "1"
+serde_json = { version = "1.0.154", features = ["preserve_order"] }
+thiserror = "2.0.21"
 
 # UUIDv7 — used by the Store for item ids. Time-ordered, RFC 9562.
-uuid = { version = "1", features = ["v7"] }
+uuid = { version = "1.28.0", features = ["v7"] }
 
 # WebAssembly bindings — gated behind the `wasm` feature so native Rust users
 # don't pay the wasm-bindgen cost.
-wasm-bindgen = { version = "0.2", optional = true }
+wasm-bindgen = { version = "0.2.129", optional = true }
 # Used by `wasm.rs` to convert Rust types into rich `JsValue`s without a
 # manual stringify dance. Optional / wasm-only.
-serde-wasm-bindgen = { version = "0.6", optional = true }
-js-sys = { version = "0.3", optional = true }
+serde-wasm-bindgen = { version = "0.6.5", optional = true }
+js-sys = { version = "0.3.106", optional = true }
 # Routes Rust panics into `console.error` instead of the opaque
 # `RuntimeError: unreachable` browsers / Node otherwise surface. Lights
 # up only on the wasm build.
-console_error_panic_hook = { version = "0.1", optional = true }
+console_error_panic_hook = { version = "0.1.7", optional = true }
 
 # SQLite persistence adapter — bundled libsqlite3 so we have no system
 # dependency. Gated behind a feature flag because rusqlite does not build on
 # the `wasm32-unknown-unknown` target.
-rusqlite = { version = "0.31", features = ["bundled"], optional = true }
+rusqlite = { version = "0.40.2", features = ["bundled"], optional = true }
 
 # `getrandom` is a transitive dep of `uuid`; on `wasm32-unknown-unknown` the
 # crate refuses to build unless a randomness backend is selected. Picking
-# the `js` feature wires it into `crypto.getRandomValues()` in the host
-# environment (browser / Node 17+). `uuid`'s `js` feature flips the same
+# the `wasm_js` feature wires it into `crypto.getRandomValues()` in the host
+# environment (browser / Node 19+). `uuid`'s `js` feature flips the same
 # switch for the uuid crate itself. We pin both via a target-specific
 # block so native builds keep their lean dependency tree.
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-getrandom = { version = "0.2", features = ["js"] }
-uuid = { version = "1", features = ["v7", "js"] }
+getrandom = { version = "0.4.3", features = ["wasm_js"] }
+uuid = { version = "1.28.0", features = ["v7", "js"] }
 
 [features]
 default = ["persist-sqlite"]
@@ -65,9 +65,9 @@ wasm = ["dep:wasm-bindgen", "dep:serde-wasm-bindgen", "dep:js-sys", "dep:console
 persist-sqlite = ["dep:rusqlite"]
 
 [dev-dependencies]
-criterion = { version = "0.5", features = ["html_reports"] }
-sha2 = "0.10"
-tempfile = "3"
+criterion = { version = "0.8.2", features = ["html_reports"] }
+sha2 = "0.11.1"
+tempfile = "3.27.0"
 
 [[bench]]
 name = "primitives"

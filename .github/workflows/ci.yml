@@ -67,7 +67,7 @@ jobs:
       group: tanvrit
       labels: [self-hosted, Linux, X64]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       # `stable`, not the MSRV floor. `dtolnay/rust-toolchain@stable` with
       # `toolchain: "1.75"` actually installed 1.75 — the `with:` input wins over
@@ -80,7 +80,7 @@ jobs:
       # These jobs build and test the tree AS LOCKED. MSRV is a promise about
       # what a consumer's own resolution can pick (`uuid = "1"` can still select
       # a 1.75-compatible 1.x), not about our lockfile. Same call was already
-      # made for conformance.yml in b4c03f1; rust-version = "1.75" is unchanged.
+      # made for conformance.yml in b4c03f1; rust-version = "1.89" is unchanged.
       #
       # Caveat worth keeping honest: conformance.yml argued the offender was a
       # dev-dependency (criterion). For core-rs it is `uuid`, a REAL dependency,
@@ -91,7 +91,7 @@ jobs:
         with:
           components: clippy, rustfmt
 
-      - uses: actions/cache@v4
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             ~/.cargo/registry/index/
@@ -120,7 +120,7 @@ jobs:
 
       - name: Upload test artifacts on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: rust-core-failure-logs
           path: |
@@ -140,11 +140,11 @@ jobs:
       labels: [self-hosted, Linux, X64]
     needs: rust-core
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - uses: dtolnay/rust-toolchain@stable
 
-      - uses: actions/cache@v4
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             ~/.cargo/registry/index/
@@ -164,7 +164,7 @@ jobs:
         run: cargo build --release
 
       - name: Upload JNA-shaped artifact for downstream KMP job
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ffi-cdylib-linux-x64
           path: packages/smritidb-ffi/target/release/libsmritidb_ffi.so
@@ -184,11 +184,11 @@ jobs:
       labels: [self-hosted, Linux, X64]
     needs: rust-core
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - uses: dtolnay/rust-toolchain@stable
 
-      - uses: actions/cache@v4
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             ~/.cargo/registry/index/
@@ -253,7 +253,7 @@ jobs:
       labels: [self-hosted, Linux, X64]
     needs: rust-core
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - uses: dtolnay/rust-toolchain@stable
 
@@ -277,11 +277,11 @@ jobs:
       # so $HOME is shared by concurrent jobs. The tool cache is private to one
       # registration and survives between its jobs, so the interpreter
       # downloads once per runner, not once per job.
-      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         env:
           UV_PYTHON_INSTALL_DIR: ${{ runner.tool_cache }}/uv-python
         with:
-          version: "0.12.18"
+          version: "0.13.1"
 
       # A real virtualenv in the job's temp dir, activated for every later step
       # (VIRTUAL_ENV + PATH), so `python`, `maturin` and `pytest` below are this
@@ -298,7 +298,7 @@ jobs:
           echo "$RUNNER_TEMP/venv/bin" >> "$GITHUB_PATH"
           "$RUNNER_TEMP/venv/bin/python" -c 'import sys; assert sys.version_info[:2] == (3, 11), sys.version; print(sys.executable, sys.version)'
 
-      - uses: actions/cache@v4
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             ~/.cargo/registry/index/
@@ -310,7 +310,7 @@ jobs:
             cargo-py-${{ runner.os }}-
 
       - name: Install maturin + pytest
-        run: uv pip install "maturin>=1.7,<2.0" pytest
+        run: uv pip install "maturin>=1.15,<2.0" pytest
 
       # Build the abi3 wheel and install it, rather than `maturin develop`.
       # The job now HAS an active venv (the step above), so `maturin develop`
@@ -333,7 +333,7 @@ jobs:
 
       - name: Upload pytest output on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: python-pytest-logs
           path: packages/smritidb-py/.pytest_cache/
@@ -376,9 +376,9 @@ jobs:
       - name: Per-runner Gradle home
         uses: tanvrit/artifactory/.github/actions/gradle-home@c09641051fef26bbed748dadd4d831d72d7cea81  # main as of 2026-09-24 (artifactory #13); public repo that publishes: pinned by SHA
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
           java-version: "17"
@@ -433,7 +433,7 @@ jobs:
       # (kmp-apple provisions the same version through setup-gradle instead,
       # because the wrapper's own download timed out on the Macs — see there.)
       # setup-gradle stays here for its build summary, with its cache off.
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
         with:
           cache-disabled: true
 
@@ -446,7 +446,7 @@ jobs:
       - name: Upload test reports on failure
         if: failure()
         continue-on-error: true
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: kmp-jvm-test-reports
           path: packages/smritidb-kmp/build/reports/tests/
@@ -470,9 +470,9 @@ jobs:
       labels: [self-hosted, macOS, ARM64]
     needs: rust-core
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
           java-version: "17"
@@ -481,7 +481,7 @@ jobs:
         with:
           targets: aarch64-apple-darwin,aarch64-apple-ios,aarch64-apple-ios-sim
 
-      - uses: actions/cache@v4
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             ~/.cargo/registry/index/
@@ -534,7 +534,7 @@ jobs:
         # tanvrit/artifactory/.github/actions/gradle-home.
         uses: tanvrit/artifactory/.github/actions/gradle-home@c09641051fef26bbed748dadd4d831d72d7cea81  # main as of 2026-09-24 (artifactory #13); public repo that publishes: pinned by SHA
 
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
         with:
           gradle-version: ${{ steps.gradle-pin.outputs.version }}
           cache-read-only: ${{ github.ref != 'refs/heads/main' }}
@@ -556,7 +556,7 @@ jobs:
       - name: Upload test reports on failure
         if: failure()
         continue-on-error: true
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: kmp-apple-test-reports
           path: packages/smritidb-kmp/build/reports/tests/
@@ -574,7 +574,7 @@ jobs:
       group: tanvrit
       labels: [self-hosted, Linux, X64]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       # No `version:` input on purpose. `packageManager` in the root package.json
       # is the single source of truth for the pnpm version (Corepack reads it, and
@@ -594,16 +594,16 @@ jobs:
       # runner name keeps the directory under $HOME, so pnpm's store location
       # (which depends on whether PNPM_HOME and the checkout share a
       # filesystem) is exactly what it was.
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
         with:
           dest: ~/setup-pnpm-${{ runner.name }}
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
           cache: pnpm
 
-      - uses: actions/cache@v4
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             ~/.local/share/pnpm/store
@@ -620,7 +620,7 @@ jobs:
       - run: pnpm build
 
       - name: Upload built core-ts dist for conformance gate
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: core-ts-dist
           path: packages/core-ts/dist/
@@ -641,23 +641,23 @@ jobs:
       labels: [self-hosted, Linux, X64]
     needs: [rust-core, typescript]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       # No `version:` input on purpose. `packageManager` in the root package.json
       # is the single source of truth for the pnpm version (Corepack reads it, and
       # it governs local dev too). pnpm/action-setup@v4 errors out with "Multiple
       # versions of pnpm specified" if both are present. Per-runner `dest`: see
       # the typescript job.
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
         with:
           dest: ~/setup-pnpm-${{ runner.name }}
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
           cache: pnpm
 
-      - uses: actions/cache@v4
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             ~/.local/share/pnpm/store
@@ -691,7 +691,7 @@ jobs:
 
       - name: Upload regenerated artifacts on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: conformance-regen-diff
           path: |
@@ -710,16 +710,16 @@ jobs:
       group: tanvrit
       labels: [self-hosted, Linux, X64]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       # Same uv provisioning as the `python` job — see the comments there.
       # actions/setup-python failed here identically: "The version '3.12' with
       # architecture 'x64' was not found for Debian 13" (job 103017519632).
-      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         env:
           UV_PYTHON_INSTALL_DIR: ${{ runner.tool_cache }}/uv-python
         with:
-          version: "0.12.18"
+          version: "0.13.1"
 
       - name: Provision Python 3.12 venv (uv)
         run: |
@@ -744,8 +744,8 @@ jobs:
       group: tanvrit
       labels: [self-hosted, Linux, X64]
     steps:
-      - uses: actions/checkout@v4
-      - uses: DavidAnson/markdownlint-cli2-action@v16
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: DavidAnson/markdownlint-cli2-action@21c1be1b93ad9ed58fa840aacc3f279cde2a72ff # v24.2.0
         with:
           globs: |
             SPEC.md

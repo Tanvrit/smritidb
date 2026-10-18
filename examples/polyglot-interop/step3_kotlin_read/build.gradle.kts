@@ -10,7 +10,7 @@
 // library on first call without LD_LIBRARY_PATH gymnastics.
 
 plugins {
-    kotlin("jvm") version "2.4.20"
+    kotlin("jvm") version "2.4.21"
     application
 }
 
@@ -36,8 +36,8 @@ dependencies {
     implementation(files(rootProject.file("../../../packages/smritidb-kmp/build/libs/smritidb-kmp-jvm-0.1.0.jar")))
 
     // The JAR was compiled against these but they're not bundled.
-    implementation("net.java.dev.jna:jna:5.14.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
+    implementation("net.java.dev.jna:jna:5.19.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
 }
 
 application {
