@@ -74,6 +74,9 @@ jobs:
     # and the object form (`{group, labels}`) is never parsed as a runner spec.
     runs-on: ${{ fromJSON(matrix.runner) }}
     steps:
+      - name: Prepare macOS CI tools
+        if: runner.os == 'macOS'
+        uses: tanvrit/artifactory/.github/actions/macos-ci-tools@main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
@@ -102,8 +105,11 @@ jobs:
     name: TypeScript npm tarball
     runs-on:
       group: tanvrit
-      labels: [self-hosted, Linux, X64]
+      labels: [self-hosted, macOS, ARM64]
     steps:
+      - name: Prepare macOS CI tools
+        if: runner.os == 'macOS'
+        uses: tanvrit/artifactory/.github/actions/macos-ci-tools@main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       # No `version:` input on purpose. `packageManager` in the root package.json
@@ -157,12 +163,15 @@ jobs:
     name: KMP JVM Maven publication
     runs-on:
       group: tanvrit
-      labels: [self-hosted, Linux, X64]
+      labels: [self-hosted, macOS, ARM64]
     timeout-minutes: 30
     defaults:
       run:
         shell: bash
     steps:
+      - name: Prepare macOS CI tools
+        if: runner.os == 'macOS'
+        uses: tanvrit/artifactory/.github/actions/macos-ci-tools@main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
@@ -221,9 +230,12 @@ jobs:
     name: .NET NuGet (scaffold; skipped)
     runs-on:
       group: tanvrit
-      labels: [self-hosted, Linux, X64]
+      labels: [self-hosted, macOS, ARM64]
     if: false # Flip to true once packages/smritidb-dotnet has a real csproj.
     steps:
+      - name: Prepare macOS CI tools
+        if: runner.os == 'macOS'
+        uses: tanvrit/artifactory/.github/actions/macos-ci-tools@main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
@@ -244,10 +256,13 @@ jobs:
     name: Attach artifacts to GitHub Release
     runs-on:
       group: tanvrit
-      labels: [self-hosted, Linux, X64]
+      labels: [self-hosted, macOS, ARM64]
     needs: [python-wheels, npm-package, kmp-jvm]
     if: startsWith(github.ref, 'refs/tags/v')
     steps:
+      - name: Prepare macOS CI tools
+        if: runner.os == 'macOS'
+        uses: tanvrit/artifactory/.github/actions/macos-ci-tools@main
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           path: artifacts

@@ -65,8 +65,11 @@ jobs:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on:
       group: tanvrit
-      labels: [self-hosted, Linux, X64]
+      labels: [self-hosted, macOS, ARM64]
     steps:
+      - name: Prepare macOS CI tools
+        if: runner.os == 'macOS'
+        uses: tanvrit/artifactory/.github/actions/macos-ci-tools@main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       # `stable`, not the MSRV floor. `dtolnay/rust-toolchain@stable` with
@@ -137,9 +140,12 @@ jobs:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on:
       group: tanvrit
-      labels: [self-hosted, Linux, X64]
+      labels: [self-hosted, macOS, ARM64]
     needs: rust-core
     steps:
+      - name: Prepare macOS CI tools
+        if: runner.os == 'macOS'
+        uses: tanvrit/artifactory/.github/actions/macos-ci-tools@main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - uses: dtolnay/rust-toolchain@stable
@@ -181,9 +187,12 @@ jobs:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on:
       group: tanvrit
-      labels: [self-hosted, Linux, X64]
+      labels: [self-hosted, macOS, ARM64]
     needs: rust-core
     steps:
+      - name: Prepare macOS CI tools
+        if: runner.os == 'macOS'
+        uses: tanvrit/artifactory/.github/actions/macos-ci-tools@main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - uses: dtolnay/rust-toolchain@stable
@@ -250,9 +259,12 @@ jobs:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on:
       group: tanvrit
-      labels: [self-hosted, Linux, X64]
+      labels: [self-hosted, macOS, ARM64]
     needs: rust-core
     steps:
+      - name: Prepare macOS CI tools
+        if: runner.os == 'macOS'
+        uses: tanvrit/artifactory/.github/actions/macos-ci-tools@main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - uses: dtolnay/rust-toolchain@stable
@@ -365,12 +377,15 @@ jobs:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on:
       group: tanvrit
-      labels: [self-hosted, Linux, ARM64]
+      labels: [self-hosted, macOS, ARM64]
     timeout-minutes: 30
     defaults:
       run:
         shell: bash
     steps:
+      - name: Prepare macOS CI tools
+        if: runner.os == 'macOS'
+        uses: tanvrit/artifactory/.github/actions/macos-ci-tools@main
       # Per-runner, trust-separated Gradle home: a pull_request build never
       # writes a Gradle cache that a push-to-main build reads.
       - name: Per-runner Gradle home
@@ -470,6 +485,9 @@ jobs:
       labels: [self-hosted, macOS, ARM64]
     needs: rust-core
     steps:
+      - name: Prepare macOS CI tools
+        if: runner.os == 'macOS'
+        uses: tanvrit/artifactory/.github/actions/macos-ci-tools@main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
@@ -572,8 +590,11 @@ jobs:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on:
       group: tanvrit
-      labels: [self-hosted, Linux, X64]
+      labels: [self-hosted, macOS, ARM64]
     steps:
+      - name: Prepare macOS CI tools
+        if: runner.os == 'macOS'
+        uses: tanvrit/artifactory/.github/actions/macos-ci-tools@main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       # No `version:` input on purpose. `packageManager` in the root package.json
@@ -638,9 +659,12 @@ jobs:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on:
       group: tanvrit
-      labels: [self-hosted, Linux, X64]
+      labels: [self-hosted, macOS, ARM64]
     needs: [rust-core, typescript]
     steps:
+      - name: Prepare macOS CI tools
+        if: runner.os == 'macOS'
+        uses: tanvrit/artifactory/.github/actions/macos-ci-tools@main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       # No `version:` input on purpose. `packageManager` in the root package.json
@@ -682,8 +706,9 @@ jobs:
         run: |
           cp tests/conformance/emit_kmf_fixture.mjs tests/conformance/emit_kmf_fixture.regen.mjs
           # Rewrite the output path so we don't clobber the checked-in fixture.
-          sed -i 's|kmf_fixture.bin|kmf_fixture.regen.bin|g; s|kmf_fixture.json|kmf_fixture.regen.json|g' \
+          sed -i.bak 's|kmf_fixture.bin|kmf_fixture.regen.bin|g; s|kmf_fixture.json|kmf_fixture.regen.json|g' \
             tests/conformance/emit_kmf_fixture.regen.mjs
+          rm -f tests/conformance/emit_kmf_fixture.regen.mjs.bak
           node tests/conformance/emit_kmf_fixture.regen.mjs
 
       - name: Compare regenerated fixture to the checked-in fixture
@@ -708,8 +733,11 @@ jobs:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on:
       group: tanvrit
-      labels: [self-hosted, Linux, X64]
+      labels: [self-hosted, macOS, ARM64]
     steps:
+      - name: Prepare macOS CI tools
+        if: runner.os == 'macOS'
+        uses: tanvrit/artifactory/.github/actions/macos-ci-tools@main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       # Same uv provisioning as the `python` job — see the comments there.
@@ -742,8 +770,11 @@ jobs:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on:
       group: tanvrit
-      labels: [self-hosted, Linux, X64]
+      labels: [self-hosted, macOS, ARM64]
     steps:
+      - name: Prepare macOS CI tools
+        if: runner.os == 'macOS'
+        uses: tanvrit/artifactory/.github/actions/macos-ci-tools@main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: DavidAnson/markdownlint-cli2-action@21c1be1b93ad9ed58fa840aacc3f279cde2a72ff # v24.2.0
         with:

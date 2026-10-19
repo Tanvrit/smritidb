@@ -56,8 +56,11 @@ jobs:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on:
       group: tanvrit
-      labels: [self-hosted, Linux, X64]
+      labels: [self-hosted, macOS, ARM64]
     steps:
+      - name: Prepare macOS CI tools
+        if: runner.os == 'macOS'
+        uses: tanvrit/artifactory/.github/actions/macos-ci-tools@main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       # No `version:` input on purpose. `packageManager` in the root package.json
@@ -100,8 +103,9 @@ jobs:
       - name: Re-emit KMF fixture into a sibling path
         run: |
           cp tests/conformance/emit_kmf_fixture.mjs tests/conformance/emit_kmf_fixture.regen.mjs
-          sed -i 's|kmf_fixture.bin|kmf_fixture.regen.bin|g; s|kmf_fixture.json|kmf_fixture.regen.json|g' \
+          sed -i.bak 's|kmf_fixture.bin|kmf_fixture.regen.bin|g; s|kmf_fixture.json|kmf_fixture.regen.json|g' \
             tests/conformance/emit_kmf_fixture.regen.mjs
+          rm -f tests/conformance/emit_kmf_fixture.regen.mjs.bak
           node tests/conformance/emit_kmf_fixture.regen.mjs
 
       - name: cmp regenerated vs checked-in
@@ -129,8 +133,11 @@ jobs:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on:
       group: tanvrit
-      labels: [self-hosted, Linux, X64]
+      labels: [self-hosted, macOS, ARM64]
     steps:
+      - name: Prepare macOS CI tools
+        if: runner.os == 'macOS'
+        uses: tanvrit/artifactory/.github/actions/macos-ci-tools@main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       # No `version:` input on purpose. `packageManager` in the root package.json
@@ -165,8 +172,11 @@ jobs:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on:
       group: tanvrit
-      labels: [self-hosted, Linux, X64]
+      labels: [self-hosted, macOS, ARM64]
     steps:
+      - name: Prepare macOS CI tools
+        if: runner.os == 'macOS'
+        uses: tanvrit/artifactory/.github/actions/macos-ci-tools@main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       # `stable`, not the MSRV floor. These jobs run `cargo test` / `cargo build`,
@@ -209,8 +219,11 @@ jobs:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on:
       group: tanvrit
-      labels: [self-hosted, Linux, X64]
+      labels: [self-hosted, macOS, ARM64]
     steps:
+      - name: Prepare macOS CI tools
+        if: runner.os == 'macOS'
+        uses: tanvrit/artifactory/.github/actions/macos-ci-tools@main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       # `stable`, not the MSRV floor. These jobs run `cargo test` / `cargo build`,
@@ -285,12 +298,15 @@ jobs:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on:
       group: tanvrit
-      labels: [self-hosted, Linux, ARM64]
+      labels: [self-hosted, macOS, ARM64]
     timeout-minutes: 30
     defaults:
       run:
         shell: bash
     steps:
+      - name: Prepare macOS CI tools
+        if: runner.os == 'macOS'
+        uses: tanvrit/artifactory/.github/actions/macos-ci-tools@main
       # Per-runner, trust-separated Gradle home (see ci.yml's kmp-jvm): a
       # pull_request build never writes a Gradle cache that a push-to-main,
       # scheduled or dispatched build reads.
@@ -376,7 +392,7 @@ jobs:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on:
       group: tanvrit
-      labels: [self-hosted, Linux, X64]
+      labels: [self-hosted, macOS, ARM64]
     needs:
       - fixture-parity
       - ts-conformance
@@ -384,5 +400,8 @@ jobs:
       - py-conformance
       - kmp-conformance
     steps:
+      - name: Prepare macOS CI tools
+        if: runner.os == 'macOS'
+        uses: tanvrit/artifactory/.github/actions/macos-ci-tools@main
       - name: All bindings passed
         run: echo "Smritidb conformance gate green across all bindings."
