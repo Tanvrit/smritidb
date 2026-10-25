@@ -44,12 +44,12 @@ A **hypervector** is a vector in `{0, 1}^D`.
 
 All operations are deterministic given identical inputs.
 
-| Op | Symbol | Definition | Properties |
-|---|---|---|---|
-| **Bundle** (superposition) | `⊕` | Element-wise majority over a multiset of hypervectors, ties broken by a deterministic tiebreaker (§1.3). | Approximately preserves similarity to each input. |
-| **Bind** | `⊗` | Element-wise XOR. | Self-inverse: `(a ⊗ b) ⊗ b = a`. Distributes over bundle. |
-| **Permute** | `Π_k` | Cyclic bit rotation by `k` positions. | Used to encode order and protect bindings from interference. |
-| **Similarity** | `sim` | `1 - hamming(a, b) / D`, in `[0, 1]`. | `sim(a, a) = 1`. Random pair: `sim ≈ 0.5`. |
+| Op                         | Symbol | Definition                                                                                               | Properties                                                   |
+| -------------------------- | ------ | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| **Bundle** (superposition) | `⊕`    | Element-wise majority over a multiset of hypervectors, ties broken by a deterministic tiebreaker (§1.3). | Approximately preserves similarity to each input.            |
+| **Bind**                   | `⊗`    | Element-wise XOR.                                                                                        | Self-inverse: `(a ⊗ b) ⊗ b = a`. Distributes over bundle.    |
+| **Permute**                | `Π_k`  | Cyclic bit rotation by `k` positions.                                                                    | Used to encode order and protect bindings from interference. |
+| **Similarity**             | `sim`  | `1 - hamming(a, b) / D`, in `[0, 1]`.                                                                    | `sim(a, a) = 1`. Random pair: `sim ≈ 0.5`.                   |
 
 ### 1.3 Tiebreaker
 
@@ -99,7 +99,8 @@ Item := {
 ```
 
 - `key` is derived from the user-provided semantic key (see §3).
-- `value` is treated as opaque bytes by the substrate. Encoding is the caller's responsibility.
+- `value` is treated as opaque bytes by the substrate. Encoding is the
+  caller's responsibility.
 - Implementations MUST enforce the value cap; the default is 16 MiB,
   configurable to 256 MiB. Larger values belong in a blob store; pair the blob's
   CAS hash with Smritidb.
@@ -300,13 +301,13 @@ snapshot(table) -> handle         # atomic write of a new full snapshot
 
 Reference adapters (Phase 4):
 
-| Adapter | Platform | Notes |
-|---|---|---|
-| `memory`     | all      | Ephemeral, no persistence. |
-| `indexeddb`  | browser  | Snapshot + WAL in two object stores. |
-| `sqlite`     | native   | WAL in a journal table; snapshot in a blob. |
-| `fs`         | server   | Append-only log + periodic snapshot file. |
-| `s3`         | cloud    | Snapshot in one object; WAL in chunked objects keyed by epoch. |
+| Adapter     | Platform | Notes                                                          |
+| ----------- | -------- | -------------------------------------------------------------- |
+| `memory`    | all      | Ephemeral, no persistence.                                     |
+| `indexeddb` | browser  | Snapshot + WAL in two object stores.                           |
+| `sqlite`    | native   | WAL in a journal table; snapshot in a blob.                    |
+| `fs`        | server   | Append-only log + periodic snapshot file.                      |
+| `s3`        | cloud    | Snapshot in one object; WAL in chunked objects keyed by epoch. |
 
 Adapters are *not* part of the spec's hot path. The spec defines what
 `loadVectorTable` returns and what `appendUpdate` accepts; the implementation is
@@ -379,12 +380,12 @@ and write.
 
 Block kinds:
 
-| Kind | Contents |
-|---|---|
-| `hv_block`   | `n × ceil(D/8)` packed hypervectors. |
-| `meta_block` | `n` rows of `{ id, tags, metadata, createdAt, accessCount, lastAccessedAt }`, JSON-encoded (Phase 1; MessagePack contemplated for Phase 2 v0.2.0). |
-| `value_block` | `n` value payloads, length-prefixed. |
-| `attic_block` | Cold-summary entries (see §5.3). |
+| Kind          | Contents                                                                                                                                           |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `hv_block`    | `n × ceil(D/8)` packed hypervectors.                                                                                                               |
+| `meta_block`  | `n` rows of `{ id, tags, metadata, createdAt, accessCount, lastAccessedAt }`, JSON-encoded (Phase 1; MessagePack contemplated for Phase 2 v0.2.0). |
+| `value_block` | `n` value payloads, length-prefixed.                                                                                                               |
+| `attic_block` | Cold-summary entries (see §5.3).                                                                                                                   |
 
 Detailed byte layouts live in `docs/kmf-v0.1.0.md` (to be authored in Phase 1
 alongside the reference reader/writer).
@@ -408,7 +409,8 @@ After v1.0.0 of the spec, we will:
 1. Publish KMF as an [IETF Independent Submission](https://www.rfc-editor.org/about/independent/).
 2. Open a [W3C Community Group](https://www.w3.org/community/groups/) for
    ongoing evolution.
-3. License the spec document under CC-BY-4.0 (the reference implementations are Apache-2.0).
+3. License the spec document under CC-BY-4.0 (the reference implementations
+   are Apache-2.0).
 
 ---
 

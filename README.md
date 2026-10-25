@@ -21,18 +21,18 @@ paths (PyO3, UniFFI, wasm-bindgen, stable C ABI). Every binding round-trips the
 same conformance corpus and the same on-disk KMF snapshot — a file written by
 Python opens byte-identically in Rust, Kotlin, and TypeScript.
 
-| Stack                  | Status                  | Distribution                          | Tests passing |
-|------------------------|-------------------------|---------------------------------------|---------------|
-| Rust (`smritidb-core`) | Production-ready        | `cargo add smritidb-core`             | 50            |
-| Python (`smritidb`)    | Production-ready        | `pip install smritidb` (PyO3 wheels)  | 21            |
-| Kotlin/JVM (KMP)       | Production-ready        | Maven Central (planned)               | 12            |
-| Kotlin/Native Apple    | Production-ready        | KMP `iosArm64`, `iosX64`, `iosSimulatorArm64`, `macosArm64`, `macosX64` | 14 |
-| Kotlin/Native Linux    | Production-ready        | KMP `linuxX64`, `linuxArm64`          | 15 + 15       |
-| Kotlin/JS              | Production-ready        | KMP `js` + browser IndexedDB adapter  | 22            |
-| TypeScript (`core-ts`) | Production-ready        | `npm i @tanvrit/smritidb`             | 73            |
-| Go (`smritidb-go`)     | Source-only (cgo / C ABI) | `go get` from repo                  | scaffolded    |
-| Dart (`smritidb-dart`) | Source-only (dart:ffi / C ABI) | `dart pub get` from repo        | scaffolded    |
-| .NET (`smritidb-dotnet`) | Source-only (P/Invoke / C ABI) | `dotnet add` from repo        | scaffolded    |
+| Stack                    | Status                         | Distribution                                                            | Tests passing   |
+| ------------------------ | ------------------------------ | ----------------------------------------------------------------------- | --------------- |
+| Rust (`smritidb-core`)   | Production-ready               | `cargo add smritidb-core`                                               | 50              |
+| Python (`smritidb`)      | Production-ready               | `pip install smritidb` (PyO3 wheels)                                    | 21              |
+| Kotlin/JVM (KMP)         | Production-ready               | Maven Central (planned)                                                 | 12              |
+| Kotlin/Native Apple      | Production-ready               | KMP `iosArm64`, `iosX64`, `iosSimulatorArm64`, `macosArm64`, `macosX64` | 14              |
+| Kotlin/Native Linux      | Production-ready               | KMP `linuxX64`, `linuxArm64`                                            | 15 + 15         |
+| Kotlin/JS                | Production-ready               | KMP `js` + browser IndexedDB adapter                                    | 22              |
+| TypeScript (`core-ts`)   | Production-ready               | `npm i @tanvrit/smritidb`                                               | 73              |
+| Go (`smritidb-go`)       | Source-only (cgo / C ABI)      | `go get` from repo                                                      | scaffolded      |
+| Dart (`smritidb-dart`)   | Source-only (dart:ffi / C ABI) | `dart pub get` from repo                                                | scaffolded      |
+| .NET (`smritidb-dotnet`) | Source-only (P/Invoke / C ABI) | `dotnet add` from repo                                                  | scaffolded      |
 
 **Aggregate: 234+ tests passing** across the production-ready stacks. **9/11 KMP
 platform targets** are green end-to-end (JVM, macosArm64/X64,
@@ -132,11 +132,11 @@ and the BLAKE3-keyed tiebreaker are the four invariants every binding satisfies.
 
 ## The three load-bearing properties
 
-| Property | Inspired by | What it means in practice |
-|---|---|---|
-| **Fuzzy content-addressing** | The brain's cue-based recall — a smell, a glimpse, and the whole memory comes back. | Look up data by *similarity*, not by exact hash. Partial cues, near matches, semantic queries — all native. |
-| **Holographic distribution** | Cortical memory — each item spread across many synapses, no single "address." | Lose a chunk of the substrate, lose *no specific item*. Everything just gets a little fuzzier. Degrades like a hologram, not like a disk. |
-| **Hebbian consolidation** | Hippocampus → cortex transfer during sleep. | Frequently co-accessed items get bound closer. Cold items summarize. The index reshapes itself based on how you actually use it. |
+| Property                     | Inspired by                                                                         | What it means in practice                                                                                                                 |
+| ---------------------------- | ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| **Fuzzy content-addressing** | The brain's cue-based recall — a smell, a glimpse, and the whole memory comes back. | Look up data by *similarity*, not by exact hash. Partial cues, near matches, semantic queries — all native.                               |
+| **Holographic distribution** | Cortical memory — each item spread across many synapses, no single "address."       | Lose a chunk of the substrate, lose *no specific item*. Everything just gets a little fuzzier. Degrades like a hologram, not like a disk. |
+| **Hebbian consolidation**    | Hippocampus → cortex transfer during sleep.                                         | Frequently co-accessed items get bound closer. Cold items summarize. The index reshapes itself based on how you actually use it.          |
 
 The math substrate is **binary hyperdimensional computing** / **Sparse
 Distributed Memory** — a 38-year-old, well-validated academic foundation. The
@@ -259,4 +259,5 @@ and this library. See [`CITATION.cff`](CITATION.cff).
 
 ---
 
-*"Memory is not a thing you have. It is a thing you do." — and now, a thing you import.*
+*"Memory is not a thing you have. It is a thing you do." — and now,
+a thing you import.*

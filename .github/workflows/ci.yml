@@ -433,13 +433,15 @@ jobs:
         working-directory: packages/smritidb-ffi
         run: |
           set -euo pipefail
-          case "$(uname -m)" in
-            aarch64|arm64) JNA_PLATFORM=linux-aarch64 ;;
-            x86_64|amd64) JNA_PLATFORM=linux-x86-64 ;;
-            *) echo "::error::no JNA platform directory for $(uname -m)"; exit 1 ;;
+          case "$(uname -s)/$(uname -m)" in
+            Darwin/arm64) JNA_PLATFORM=darwin-aarch64; LIBRARY=libsmritidb_ffi.dylib ;;
+            Darwin/x86_64) JNA_PLATFORM=darwin-x86-64; LIBRARY=libsmritidb_ffi.dylib ;;
+            Linux/aarch64|Linux/arm64) JNA_PLATFORM=linux-aarch64; LIBRARY=libsmritidb_ffi.so ;;
+            Linux/x86_64|Linux/amd64) JNA_PLATFORM=linux-x86-64; LIBRARY=libsmritidb_ffi.so ;;
+            *) echo "::error::no JNA platform directory for $(uname -s)/$(uname -m)"; exit 1 ;;
           esac
           mkdir -p "target/release-jna/$JNA_PLATFORM"
-          cp "$CARGO_TARGET_DIR/release/libsmritidb_ffi.so" "target/release-jna/$JNA_PLATFORM/"
+          cp "$CARGO_TARGET_DIR/release/$LIBRARY" "target/release-jna/$JNA_PLATFORM/"
           ls -l "target/release-jna/$JNA_PLATFORM/"
 
       # Gradle is the wrapper's: packages/smritidb-kmp/gradle/wrapper pins

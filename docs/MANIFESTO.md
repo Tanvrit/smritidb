@@ -72,7 +72,7 @@ Nobody has shipped it as infrastructure.
 Look at the layers of a modern stack:
 
 | Layer | What it stores | How you ask |
-|---|---|---|
+| --- | --- | --- |
 | Filesystem | Bytes | Path |
 | Key-value (Redis, RocksDB) | Bytes | Exact key |
 | Relational (Postgres) | Rows | Predicate match |

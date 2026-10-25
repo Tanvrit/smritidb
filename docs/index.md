@@ -11,7 +11,8 @@ byte-identical hypervectors and byte-identical KMF wire snapshots.
   per binding
 - [Cross-Language Interop](guides/cross-language-interop.md) — how the polyglot
   demo works
-- [Persistence Architecture](guides/persistence.md) — adapters, schema, browser story
+- [Persistence Architecture](guides/persistence.md) — adapters, schema,
+  browser story
 - [Conformance Corpus](guides/conformance-corpus.md) — the bit-exactness contract
 
 ## API Reference

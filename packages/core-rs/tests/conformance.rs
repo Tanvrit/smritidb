@@ -88,7 +88,10 @@ fn load_golden() -> Golden {
 fn hex_sha256(bytes: &[u8]) -> String {
     let mut h = Sha256::new();
     h.update(bytes);
-    h.finalize().iter().map(|byte| format!("{byte:02x}")).collect()
+    h.finalize()
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect()
 }
 
 #[test]

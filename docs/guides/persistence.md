@@ -24,12 +24,12 @@ and snapshot-shaped.
 
 ## Adapters
 
-| Adapter         | Language(s)               | What it does                                                                 |
-|-----------------|---------------------------|------------------------------------------------------------------------------|
-| `MemoryAdapter` | Rust, TS, Kotlin, Python  | Stores the snapshot in RAM. Useful for tests and ephemeral workloads.        |
-| File adapter    | Rust (`FsAdapter`), TS (`fsAdapter`) | Writes the KMF snapshot to a single file path. Atomic via rename. |
-| SQLite adapter  | Rust (`SqliteAdapter`), TS (`sqliteAdapter`) | Stores the snapshot in a `snapshots` table BLOB. Bundled libsqlite3 on Rust. |
-| IndexedDB       | TS only (`indexedDbAdapter`) | Browser-side: stores the snapshot in an IndexedDB key/value store.       |
+| Adapter           | Language(s)                                  | What it does                                                                   |
+| ----------------- | -------------------------------------------- | ------------------------------------------------------------------------------ |
+| `MemoryAdapter`   | Rust, TS, Kotlin, Python                     | Stores the snapshot in RAM. Useful for tests and ephemeral workloads.          |
+| File adapter      | Rust (`FsAdapter`), TS (`fsAdapter`)         | Writes the KMF snapshot to a single file path. Atomic via rename.              |
+| SQLite adapter    | Rust (`SqliteAdapter`), TS (`sqliteAdapter`) | Stores the snapshot in a `snapshots` table BLOB. Bundled libsqlite3 on Rust.   |
+| IndexedDB         | TS only (`indexedDbAdapter`)                 | Browser-side: stores the snapshot in an IndexedDB key/value store.             |
 
 On Rust, the SQLite adapter is gated behind the `persist-sqlite` feature
 (on by default) so `wasm32-unknown-unknown` builds can opt out — `rusqlite`

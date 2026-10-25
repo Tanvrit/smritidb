@@ -16,16 +16,16 @@ passes.
 
 ## What the corpus pins
 
-| Entry kind            | Invariant                                                                                                       |
-|-----------------------|-----------------------------------------------------------------------------------------------------------------|
-| `random_hv`           | `sha256(randomHv(utf8(seed), dim))` matches the listed `sha256`.                                                |
-| `encode_string`       | `sha256(encodeString(input, dim))` matches the listed `sha256`.                                                 |
-| `similarity_pairs`    | `\|similarity(randomHv(a_seed), randomHv(b_seed)) - expected\| < 1e-9`.                                          |
-| `bind_round_trip`     | `bind(bind(a, b), b) == a` exactly; similarity = 1.0.                                                            |
-| `bundle`              | `sha256(bundle([randomHv(s) for s in seeds]))` matches the listed `sha256`.                                     |
-| `text_bag_of_words`   | `sha256(encodeBagOfWords(input, opts, dim))` matches the listed `sha256`.                                       |
-| `text_char_ngrams`    | `sha256(encodeCharNgrams(input, opts, dim))` matches the listed `sha256`.                                       |
-| KMF fixture           | `readKmf(kmf_fixture.bin)` parses, and `writeKmf(snapshot)` re-emits the same bytes.                            |
+| Entry kind              | Invariant                                                                                                         |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `random_hv`             | `sha256(randomHv(utf8(seed), dim))` matches the listed `sha256`.                                                  |
+| `encode_string`         | `sha256(encodeString(input, dim))` matches the listed `sha256`.                                                   |
+| `similarity_pairs`      | `\|similarity(randomHv(a_seed), randomHv(b_seed)) - expected\| < 1e-9`.                                           |
+| `bind_round_trip`       | `bind(bind(a, b), b) == a` exactly; similarity = 1.0.                                                             |
+| `bundle`                | `sha256(bundle([randomHv(s) for s in seeds]))` matches the listed `sha256`.                                       |
+| `text_bag_of_words`     | `sha256(encodeBagOfWords(input, opts, dim))` matches the listed `sha256`.                                         |
+| `text_char_ngrams`      | `sha256(encodeCharNgrams(input, opts, dim))` matches the listed `sha256`.                                         |
+| KMF fixture             | `readKmf(kmf_fixture.bin)` parses, and `writeKmf(snapshot)` re-emits the same bytes.                              |
 
 Hashes are SHA-256 over the **raw byte representation** of the
 hypervector — one byte per bit, value 0 or 1. The choice of one byte
@@ -34,12 +34,12 @@ invariant under the language's representation choice.
 
 ## Running the corpus per binding
 
-| Binding   | Command                                                                       |
-|-----------|-------------------------------------------------------------------------------|
-| TypeScript| `cd packages/core-ts && pnpm test`                                            |
-| Rust core | `cd packages/core-rs && cargo test --test conformance`                        |
-| Python    | `cd packages/smritidb-py && pytest tests/test_conformance.py`                 |
-| Kotlin/JVM| `cd packages/smritidb-kmp && gradle :jvmTest`                                 |
+| Binding     | Command                                                                         |
+| ----------- | ------------------------------------------------------------------------------- |
+| TypeScript  | `cd packages/core-ts && pnpm test`                                              |
+| Rust core   | `cd packages/core-rs && cargo test --test conformance`                          |
+| Python      | `cd packages/smritidb-py && pytest tests/test_conformance.py`                   |
+| Kotlin/JVM  | `cd packages/smritidb-kmp && gradle :jvmTest`                                   |
 
 Every binding's CI invocation includes the conformance test by default;
 a regression there is a hard fail.
