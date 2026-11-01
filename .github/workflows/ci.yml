@@ -784,7 +784,7 @@ jobs:
         run: uv pip install -r requirements.txt
 
       - working-directory: notebooks
-        run: jupyter nbconvert --to notebook --execute phase0_hdc_validation.ipynb --output /tmp/exec.ipynb
+        run: jupyter nbconvert --to notebook --execute phase0_hdc_validation.ipynb --output-dir "$RUNNER_TEMP" --output exec.ipynb
 
   spec-lint:
     name: Spec — markdown lint
