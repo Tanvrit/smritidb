@@ -164,10 +164,15 @@ jobs:
   rust-conformance:
     name: Rust — corpus + KMF cross-impl
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    # Stays on macOS (2026-11-01): the ovh-x64 Linux hosts have no C toolchain,
+    # so cargo/maturin fail with "linker `cc` not found". Move once they do.
     runs-on:
       group: tanvrit
-      labels: [self-hosted, Linux, X64]
+      labels: [self-hosted, macOS, ARM64]
     steps:
+      - name: Prepare macOS CI tools
+        if: runner.os == 'macOS'
+        uses: tanvrit/artifactory/.github/actions/macos-ci-tools@main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       # `stable`, not the MSRV floor. These jobs run `cargo test` / `cargo build`,
@@ -208,10 +213,15 @@ jobs:
   py-conformance:
     name: Python — corpus tests (via maturin)
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    # Stays on macOS (2026-11-01): the ovh-x64 Linux hosts have no C toolchain,
+    # so cargo/maturin fail with "linker `cc` not found". Move once they do.
     runs-on:
       group: tanvrit
-      labels: [self-hosted, Linux, X64]
+      labels: [self-hosted, macOS, ARM64]
     steps:
+      - name: Prepare macOS CI tools
+        if: runner.os == 'macOS'
+        uses: tanvrit/artifactory/.github/actions/macos-ci-tools@main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       # `stable`, not the MSRV floor. These jobs run `cargo test` / `cargo build`,
@@ -284,14 +294,19 @@ jobs:
   kmp-conformance:
     name: KMP JVM — corpus tests (via UniFFI)
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    # Stays on macOS (2026-11-01): the ovh-x64 Linux hosts have no C toolchain,
+    # so cargo/maturin fail with "linker `cc` not found". Move once they do.
     runs-on:
       group: tanvrit
-      labels: [self-hosted, Linux, X64]
+      labels: [self-hosted, macOS, ARM64]
     timeout-minutes: 30
     defaults:
       run:
         shell: bash
     steps:
+      - name: Prepare macOS CI tools
+        if: runner.os == 'macOS'
+        uses: tanvrit/artifactory/.github/actions/macos-ci-tools@main
       # Per-runner, trust-separated Gradle home (see ci.yml's kmp-jvm): a
       # pull_request build never writes a Gradle cache that a push-to-main,
       # scheduled or dispatched build reads.
