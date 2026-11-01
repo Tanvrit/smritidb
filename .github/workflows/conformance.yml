@@ -244,11 +244,21 @@ jobs:
       # was not found for Debian 13" (job 107180313417). Identical to ci.yml's
       # `python` job — the reasoning (why uv, why the SHA pin, why the
       # per-runner UV_PYTHON_INSTALL_DIR) is written out there.
+      #
+      # cache-local-path: setup-uv's default cache dir is under $RUNNER_TEMP,
+      # which is wiped after every job, so every run re-downloaded the 18.9 MiB
+      # maturin wheel from PyPI. On these runners that download is what failed
+      # (run 41017992239: "Failed to fetch https://pypi.org/simple/maturin/ ...
+      # operation timed out" after 3 retries in 114 s). A persistent per-runner
+      # cache serves the wheel locally. It is trust-separated like the Gradle
+      # home: a pull_request build never writes a cache that a push, schedule or
+      # dispatch build reads. uv locks its cache, so concurrent jobs are safe.
       - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         env:
           UV_PYTHON_INSTALL_DIR: ${{ runner.tool_cache }}/uv-python
         with:
           version: "0.13.1"
+          cache-local-path: ${{ runner.tool_cache }}/uv-cache-${{ runner.name }}-${{ github.event_name == 'pull_request' && 'pr' || 'trusted' }}
 
       - name: Provision Python 3.11 venv (uv)
         run: |
@@ -271,7 +281,13 @@ jobs:
           restore-keys: |
             cargo-py-${{ runner.os }}-
 
+      # uv's defaults (30 s read timeout, 3 retries) gave up after 114 s on a
+      # stalled PyPI response. Same request, more patience: still fails if
+      # PyPI is genuinely unreachable.
       - run: uv pip install "maturin>=1.15,<2.0" pytest
+        env:
+          UV_HTTP_TIMEOUT: "120"
+          UV_HTTP_RETRIES: "6"
 
       # Same as ci.yml's `python` job: build the wheel and install it, so the
       # tests import the built extension rather than the source tree.
@@ -304,14 +320,22 @@ jobs:
       run:
         shell: bash
     steps:
+      # Both artifactory actions name the SAME ref on purpose. The runner
+      # fetches one tarball per distinct repo@ref, and the artifactory tarball
+      # is ~19 MB (its branding/ tree). With macos-ci-tools@main beside
+      # gradle-home@<sha> this job fetched it twice, and that download is what
+      # timed out at "Set up job" (runs 40285792591, 40647955794, 40833308336:
+      # "codeload.github.com/Tanvrit/artifactory ... download has timed out").
+      # .github/actions/gradle-home is byte-identical between c0964105 (the
+      # previous pin, 2026-09-24) and d83f530e (main as of 2026-10-31).
       - name: Prepare macOS CI tools
         if: runner.os == 'macOS'
-        uses: tanvrit/artifactory/.github/actions/macos-ci-tools@main
+        uses: tanvrit/artifactory/.github/actions/macos-ci-tools@d83f530e56b0711baf09651e70311d5a51abea39  # main as of 2026-10-31; same ref as gradle-home below
       # Per-runner, trust-separated Gradle home (see ci.yml's kmp-jvm): a
       # pull_request build never writes a Gradle cache that a push-to-main,
       # scheduled or dispatched build reads.
       - name: Per-runner Gradle home
-        uses: tanvrit/artifactory/.github/actions/gradle-home@c09641051fef26bbed748dadd4d831d72d7cea81  # main as of 2026-09-24 (artifactory #13); public repo that publishes: pinned by SHA
+        uses: tanvrit/artifactory/.github/actions/gradle-home@d83f530e56b0711baf09651e70311d5a51abea39  # main as of 2026-10-31 (artifactory #22); public repo that publishes: pinned by SHA
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -391,7 +415,12 @@ jobs:
   # ---------------------------------------------------------------------------
   conformance-summary:
     name: Conformance summary (required check)
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    # always(): without it this job is SKIPPED whenever a binding fails, and
+    # branch protection treats a skipped required check as satisfied, so a
+    # broken binding could still merge. It now runs and fails instead. The
+    # fork-PR guard still applies: on a fork PR every job, this one included,
+    # is skipped.
+    if: always() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
     runs-on:
       group: tanvrit
       labels: [self-hosted, Linux, X64]
@@ -401,6 +430,17 @@ jobs:
       - rust-conformance
       - py-conformance
       - kmp-conformance
+    # No macos-ci-tools step: this job runs no tool, and that step costs a
+    # ~19 MB action download at "Set up job" that can itself time out.
     steps:
       - name: All bindings passed
-        run: echo "Smritidb conformance gate green across all bindings."
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+          BROKEN: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'skipped') }}
+        run: |
+          echo "binding results: $RESULTS"
+          if [ "$BROKEN" = true ]; then
+            echo "::error::Conformance broken or incomplete (a binding did not succeed): $RESULTS"
+            exit 1
+          fi
+          echo "Smritidb conformance gate green across all bindings."
