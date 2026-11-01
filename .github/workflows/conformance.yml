@@ -56,11 +56,8 @@ jobs:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on:
       group: tanvrit
-      labels: [self-hosted, macOS, ARM64]
+      labels: [self-hosted, Linux, X64]
     steps:
-      - name: Prepare macOS CI tools
-        if: runner.os == 'macOS'
-        uses: tanvrit/artifactory/.github/actions/macos-ci-tools@main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       # No `version:` input on purpose. `packageManager` in the root package.json
@@ -133,11 +130,8 @@ jobs:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on:
       group: tanvrit
-      labels: [self-hosted, macOS, ARM64]
+      labels: [self-hosted, Linux, X64]
     steps:
-      - name: Prepare macOS CI tools
-        if: runner.os == 'macOS'
-        uses: tanvrit/artifactory/.github/actions/macos-ci-tools@main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       # No `version:` input on purpose. `packageManager` in the root package.json
@@ -170,6 +164,8 @@ jobs:
   rust-conformance:
     name: Rust — corpus + KMF cross-impl
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    # Stays on macOS (2026-11-01): the ovh-x64 Linux hosts have no C toolchain,
+    # so cargo/maturin fail with "linker `cc` not found". Move once they do.
     runs-on:
       group: tanvrit
       labels: [self-hosted, macOS, ARM64]
@@ -217,6 +213,8 @@ jobs:
   py-conformance:
     name: Python — corpus tests (via maturin)
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    # Stays on macOS (2026-11-01): the ovh-x64 Linux hosts have no C toolchain,
+    # so cargo/maturin fail with "linker `cc` not found". Move once they do.
     runs-on:
       group: tanvrit
       labels: [self-hosted, macOS, ARM64]
@@ -296,6 +294,8 @@ jobs:
   kmp-conformance:
     name: KMP JVM — corpus tests (via UniFFI)
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    # Stays on macOS (2026-11-01): the ovh-x64 Linux hosts have no C toolchain,
+    # so cargo/maturin fail with "linker `cc` not found". Move once they do.
     runs-on:
       group: tanvrit
       labels: [self-hosted, macOS, ARM64]
@@ -394,7 +394,7 @@ jobs:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on:
       group: tanvrit
-      labels: [self-hosted, macOS, ARM64]
+      labels: [self-hosted, Linux, X64]
     needs:
       - fixture-parity
       - ts-conformance
@@ -402,8 +402,5 @@ jobs:
       - py-conformance
       - kmp-conformance
     steps:
-      - name: Prepare macOS CI tools
-        if: runner.os == 'macOS'
-        uses: tanvrit/artifactory/.github/actions/macos-ci-tools@main
       - name: All bindings passed
         run: echo "Smritidb conformance gate green across all bindings."
