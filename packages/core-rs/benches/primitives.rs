@@ -1,5 +1,6 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{criterion_group, criterion_main, Criterion};
 use smritidb_core::{bind, bundle, encode_string, random_hv, similarity};
+use std::hint::black_box;
 
 fn bench_random_hv(c: &mut Criterion) {
     c.bench_function("random_hv D=10000", |b| {
