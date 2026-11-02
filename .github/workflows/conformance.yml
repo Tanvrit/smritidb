@@ -164,15 +164,12 @@ jobs:
   rust-conformance:
     name: Rust — corpus + KMF cross-impl
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-    # Stays on macOS (2026-11-01): the ovh-x64 Linux hosts have no C toolchain,
-    # so cargo/maturin fail with "linker `cc` not found". Move once they do.
+    # Linux X64 (2026-11-02): the ovh-x64 hosts now carry gcc, so cargo, maturin
+    # and the C smoke build there; the macOS pool is for Apple targets only.
     runs-on:
       group: tanvrit
-      labels: [self-hosted, macOS, ARM64]
+      labels: [self-hosted, Linux, X64]
     steps:
-      - name: Prepare macOS CI tools
-        if: runner.os == 'macOS'
-        uses: tanvrit/artifactory/.github/actions/macos-ci-tools@main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       # `stable`, not the MSRV floor. These jobs run `cargo test` / `cargo build`,
@@ -213,15 +210,12 @@ jobs:
   py-conformance:
     name: Python — corpus tests (via maturin)
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-    # Stays on macOS (2026-11-01): the ovh-x64 Linux hosts have no C toolchain,
-    # so cargo/maturin fail with "linker `cc` not found". Move once they do.
+    # Linux X64 (2026-11-02): the ovh-x64 hosts now carry gcc, so cargo, maturin
+    # and the C smoke build there; the macOS pool is for Apple targets only.
     runs-on:
       group: tanvrit
-      labels: [self-hosted, macOS, ARM64]
+      labels: [self-hosted, Linux, X64]
     steps:
-      - name: Prepare macOS CI tools
-        if: runner.os == 'macOS'
-        uses: tanvrit/artifactory/.github/actions/macos-ci-tools@main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       # `stable`, not the MSRV floor. These jobs run `cargo test` / `cargo build`,
@@ -310,11 +304,11 @@ jobs:
   kmp-conformance:
     name: KMP JVM — corpus tests (via UniFFI)
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-    # Stays on macOS (2026-11-01): the ovh-x64 Linux hosts have no C toolchain,
-    # so cargo/maturin fail with "linker `cc` not found". Move once they do.
+    # Linux X64 (2026-11-02): the ovh-x64 hosts now carry gcc, so cargo, maturin
+    # and the C smoke build there; the macOS pool is for Apple targets only.
     runs-on:
       group: tanvrit
-      labels: [self-hosted, macOS, ARM64]
+      labels: [self-hosted, Linux, X64]
     timeout-minutes: 30
     defaults:
       run:
@@ -328,9 +322,6 @@ jobs:
       # "codeload.github.com/Tanvrit/artifactory ... download has timed out").
       # .github/actions/gradle-home is byte-identical between c0964105 (the
       # previous pin, 2026-09-24) and d83f530e (main as of 2026-10-31).
-      - name: Prepare macOS CI tools
-        if: runner.os == 'macOS'
-        uses: tanvrit/artifactory/.github/actions/macos-ci-tools@d83f530e56b0711baf09651e70311d5a51abea39  # main as of 2026-10-31; same ref as gradle-home below
       # Per-runner, trust-separated Gradle home (see ci.yml's kmp-jvm): a
       # pull_request build never writes a Gradle cache that a push-to-main,
       # scheduled or dispatched build reads.
